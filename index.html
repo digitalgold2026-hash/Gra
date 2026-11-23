@@ -1,1 +1,3255 @@
 
+```html
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>Reset Generation — Arcade Mobile</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Chakra+Petch:wght@600;700&display=swap" rel="stylesheet">
+  <style>
+    /* =========================================================
+       RETRO 16-BIT ARCADE STYLING & MOBILE PORTRAIT ERGONOMICS
+       ========================================================= */
+    :root {
+      --font-pixel: 'Press Start 2P', monospace;
+      --font-ui: 'Chakra Petch', sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      font-family: var(--font-ui);
+      background: linear-gradient(180deg, #3da0ff 0%, #6fc3ff 45%, #a8e1ff 100%);
+      color: #ffffff;
+      touch-action: manipulation;
+    }
+
+    .font-pixel {
+      font-family: var(--font-pixel);
+    }
+
+    /* Animated drifting sky clouds behind the arena */
+    .sky-bg {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      overflow: hidden;
+      z-index: 0;
+    }
+    .cloud {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.85);
+      box-shadow:
+        12px 6px 0 0 rgba(255,255,255,0.85),
+        -12px 6px 0 0 rgba(255,255,255,0.85),
+        0 10px 0 0 rgba(205,236,255,0.85),
+        16px 12px 0 0 rgba(205,236,255,0.85),
+        -16px 12px 0 0 rgba(205,236,255,0.85);
+      border-radius: 2px;
+      animation: drift linear infinite;
+    }
+    @keyframes drift {
+      from { transform: translateX(-140px); }
+      to { transform: translateX(calc(100vw + 140px)); }
+    }
+
+    /* Retro beveled arcade HUD panels */
+    .hud-card {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 2px solid #020617;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.18), 0 3px 0 rgba(0,0,0,0.45);
+      border-radius: 10px;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .hud-card.active-turn {
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.35), 0 0 0 2px #fde047, 0 0 14px rgba(253, 224, 71, 0.85);
+      transform: scale(1.02);
+    }
+    .hud-card.eliminated {
+      filter: grayscale(0.95) brightness(0.6);
+      opacity: 0.78;
+    }
+
+    /* Tactile 3D Arcade Buttons */
+    .arcade-btn {
+      position: relative;
+      font-family: var(--font-ui);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      border: 2px solid #0f172a;
+      border-radius: 12px;
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.45), 0 4px 0 #0f172a, 0 6px 10px rgba(0,0,0,0.3);
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.15s ease;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .arcade-btn:active:not(:disabled) {
+      transform: translateY(3px);
+      box-shadow: inset 0 2px 0 rgba(255,255,255,0.25), 0 1px 0 #0f172a, 0 2px 4px rgba(0,0,0,0.25);
+    }
+    .arcade-btn:disabled {
+      opacity: 0.45;
+      filter: grayscale(0.6);
+      cursor: not-allowed;
+    }
+
+    .btn-yellow { background: linear-gradient(180deg, #fde047 0%, #eab308 100%); color: #1e1b04; }
+    .btn-red    { background: linear-gradient(180deg, #f87171 0%, #dc2626 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+    .btn-blue   { background: linear-gradient(180deg, #60a5fa 0%, #2563eb 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+    .btn-green  { background: linear-gradient(180deg, #4ade80 0%, #16a34a 100%); color: #052e16; }
+    .btn-purple { background: linear-gradient(180deg, #c084fc 0%, #9333ea 100%); color: #ffffff; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
+    .btn-slate  { background: linear-gradient(180deg, #64748b 0%, #334155 100%); color: #ffffff; }
+
+    @keyframes superPulse {
+      0%, 100% { box-shadow: inset 0 2px 0 rgba(255,255,255,0.5), 0 4px 0 #0f172a, 0 0 10px #fde047; }
+      50% { box-shadow: inset 0 2px 0 rgba(255,255,255,0.7), 0 4px 0 #0f172a, 0 0 24px #facc15; transform: scale(1.03); }
+    }
+    .super-ready {
+      animation: superPulse 0.9s infinite ease-in-out;
+    }
+
+    /* Dramatic Arcade Cut-In Banner */
+    #cutin-overlay {
+      pointer-events: none;
+      transition: opacity 0.2s ease;
+    }
+    .cutin-strip {
+      transform: skewY(-3deg) scaleY(0);
+      transition: transform 0.22s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      border-top: 4px solid #ffffff;
+      border-bottom: 4px solid #ffffff;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.65);
+    }
+    #cutin-overlay.show .cutin-strip {
+      transform: skewY(-3deg) scaleY(1);
+    }
+
+    /* Canvas container */
+    #game-canvas {
+      touch-action: none;
+      display: block;
+      image-rendering: pixelated;
+      border-radius: 10px;
+      box-shadow: 0 10px 26px rgba(15, 23, 42, 0.45), 0 0 0 3px #0f172a;
+    }
+
+    /* Modal glass / arcade panel */
+    .arcade-modal {
+      background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+      border: 3px solid #facc15;
+      box-shadow: 0 16px 40px rgba(0,0,0,0.7), inset 0 2px 0 rgba(255,255,255,0.15);
+      border-radius: 18px;
+    }
+
+    /* Custom scrollbar inside How-To modal only */
+    .thin-scroll::-webkit-scrollbar { width: 6px; }
+    .thin-scroll::-webkit-scrollbar-thumb { background: #475569; border-radius: 99px; }
+  </style>
+</head>
+<body>
+
+  <!-- Drifting Pixel Clouds Background -->
+  <div class="sky-bg" aria-hidden="true">
+    <div class="cloud" style="top: 6%; width: 58px; height: 18px; animation-duration: 38s; animation-delay: -8s;"></div>
+    <div class="cloud" style="top: 18%; width: 42px; height: 14px; animation-duration: 52s; animation-delay: -26s; opacity: 0.75;"></div>
+    <div class="cloud" style="top: 68%; width: 64px; height: 18px; animation-duration: 44s; animation-delay: -15s; opacity: 0.7;"></div>
+    <div class="cloud" style="top: 84%; width: 48px; height: 15px; animation-duration: 60s; animation-delay: -32s; opacity: 0.65;"></div>
+  </div>
+
+  <!-- MAIN PORTRAIT APP SHELL (100dvh, zero scroll) -->
+  <div id="app" class="relative z-10 w-full h-[100dvh] max-w-[520px] mx-auto flex flex-col justify-between p-1.5 sm:p-2 gap-1">
+
+    <!-- TOP HUD: Yellow (P0) | Center Phase/Controls | Red (P1) -->
+    <header class="w-full grid grid-cols-[1fr_auto_1fr] items-center gap-1.5 shrink-0">
+      <div id="hud-p0" class="hud-card p-1.5 flex items-center gap-1.5"></div>
+
+      <div class="flex flex-col items-center justify-center gap-1 px-1">
+        <div class="bg-slate-900/90 border-2 border-slate-950 rounded-lg px-2 py-0.5 text-center shadow">
+          <div id="round-label" class="font-pixel text-[8px] text-amber-300 tracking-wider">RUNDA 1</div>
+          <div id="phase-mini" class="text-[10px] font-bold text-sky-300 uppercase leading-tight">KLOCKI</div>
+        </div>
+        <div class="flex items-center gap-1">
+          <button id="btn-mute" title="Dźwięk" class="w-7 h-7 rounded-lg bg-slate-800 border-2 border-slate-950 flex items-center justify-center text-xs shadow active:translate-y-0.5">🔊</button>
+          <button id="btn-help-ingame" title="Jak grać" class="w-7 h-7 rounded-lg bg-slate-800 border-2 border-slate-950 flex items-center justify-center text-xs font-bold text-amber-300 shadow active:translate-y-0.5">?</button>
+          <button id="btn-menu-ingame" title="Menu" class="w-7 h-7 rounded-lg bg-slate-800 border-2 border-slate-950 flex items-center justify-center text-xs shadow active:translate-y-0.5">☰</button>
+        </div>
+      </div>
+
+      <div id="hud-p1" class="hud-card p-1.5 flex items-center gap-1.5 flex-row-reverse text-right"></div>
+    </header>
+
+    <!-- CENTER ARENA CANVAS WRAPPER -->
+    <main id="canvas-wrap" class="relative flex-1 min-h-0 w-full flex items-center justify-center">
+      <canvas id="game-canvas"></canvas>
+
+      <!-- Floating Turn/Status Pill over top edge of canvas if needed -->
+      <div id="turn-pill" class="hidden absolute top-1.5 left-1/2 -translate-x-1/2 bg-slate-950/90 border-2 border-amber-400 px-3 py-1 rounded-full text-[11px] font-bold tracking-wide text-amber-200 shadow-lg pointer-events-none whitespace-nowrap">
+        Tura: Karciana
+      </div>
+    </main>
+
+    <!-- BOTTOM HUD: Blue (P2) | Green (P3) -->
+    <section class="w-full grid grid-cols-2 items-center gap-1.5 shrink-0">
+      <div id="hud-p2" class="hud-card p-1.5 flex items-center gap-1.5"></div>
+      <div id="hud-p3" class="hud-card p-1.5 flex items-center gap-1.5 flex-row-reverse text-right"></div>
+    </section>
+
+    <!-- THUMB-FRIENDLY BOTTOM CONTROL DOCK -->
+    <footer id="control-dock" class="w-full bg-slate-900/95 border-2 border-slate-950 rounded-2xl p-2 shadow-xl shrink-0 flex flex-col gap-1.5">
+      <div id="action-hint" class="text-center text-xs sm:text-sm font-bold text-amber-200 leading-tight px-1 truncate">
+        Wybierz miejsce na klocek i kliknij POSTAW!
+      </div>
+      <div id="dock-buttons" class="flex items-center justify-center gap-2 min-h-[46px]">
+        <!-- Dynamically populated per phase -->
+      </div>
+    </footer>
+  </div>
+
+  <!-- DRAMATIC ARCADE CUT-IN OVERLAY -->
+  <div id="cutin-overlay" class="fixed inset-0 z-40 flex items-center justify-center opacity-0">
+    <div id="cutin-strip" class="cutin-strip w-full py-4 px-4 bg-gradient-to-r from-indigo-900 via-purple-700 to-indigo-900 flex flex-col items-center justify-center text-center">
+      <div id="cutin-title" class="font-pixel text-base sm:text-xl text-yellow-300 drop-shadow-[0_3px_0_rgba(0,0,0,0.9)] tracking-wide leading-snug">
+        DROP YOUR BLOCKS!
+      </div>
+      <div id="cutin-sub" class="mt-1 text-xs sm:text-sm font-bold text-white uppercase tracking-widest drop-shadow">
+        Postaw swoje klocki!
+      </div>
+    </div>
+  </div>
+
+  <!-- PASS-AND-PLAY TURN HANDOFF MODAL -->
+  <div id="handoff-modal" class="hidden fixed inset-0 z-40 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="arcade-modal w-full max-w-xs p-5 text-center flex flex-col items-center gap-3">
+      <div id="handoff-badge" class="w-16 h-16 rounded-2xl border-4 border-white flex items-center justify-center text-3xl shadow-lg">👑</div>
+      <div class="font-pixel text-xs text-amber-300">PRZEKAŻ TELEFON</div>
+      <h2 id="handoff-name" class="text-xl font-bold text-white">Tura: Karciana</h2>
+      <p id="handoff-phase" class="text-xs text-slate-300">Faza Klocków — ustaw swój kształt!</p>
+      <button id="btn-handoff-go" class="arcade-btn btn-yellow w-full py-3 text-base mt-1">GRAMY!</button>
+    </div>
+  </div>
+
+  <!-- START / MENU MODAL -->
+  <div id="start-modal" class="fixed inset-0 z-50 bg-slate-950/85 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="arcade-modal w-full max-w-sm p-4 flex flex-col gap-3 max-h-[94dvh] overflow-y-auto thin-scroll">
+      <div class="text-center">
+        <div class="inline-block bg-gradient-to-r from-amber-400 via-yellow-300 to-amber-400 text-slate-950 font-pixel text-[9px] px-2.5 py-1 rounded-full border-2 border-slate-950 mb-1.5 shadow">
+          N-GAGE 2.0 CLASSIC RECREATION
+        </div>
+        <h1 class="font-pixel text-lg sm:text-xl text-yellow-300 drop-shadow-[0_3px_0_#000] leading-snug">
+          RESET<br/>GENERATION
+        </h1>
+        <p class="text-xs text-sky-200 mt-1">Tetris + Taktyka + Ratuj Księżniczkę!</p>
+      </div>
+
+      <!-- Mode Selector -->
+      <div>
+        <div class="text-[11px] font-bold uppercase text-slate-300 mb-1.5">Tryb gry:</div>
+        <div class="grid grid-cols-2 gap-2">
+          <button id="mode-ai" class="arcade-btn btn-yellow py-2 text-xs">🤖 vs 3 AI</button>
+          <button id="mode-local" class="arcade-btn btn-slate py-2 text-xs">👥 2–4 Graczy</button>
+        </div>
+        <div id="local-count-wrap" class="hidden mt-2 flex items-center justify-between bg-slate-800/80 rounded-xl p-2 border border-slate-700">
+          <span class="text-xs font-bold text-slate-200">Liczba graczy (ludzi):</span>
+          <div class="flex gap-1.5">
+            <button data-hcount="2" class="hcount-btn arcade-btn btn-blue px-3 py-1 text-xs">2</button>
+            <button data-hcount="3" class="hcount-btn arcade-btn btn-slate px-3 py-1 text-xs">3</button>
+            <button data-hcount="4" class="hcount-btn arcade-btn btn-slate px-3 py-1 text-xs">4</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Hero Selector (for vs AI mode) -->
+      <div id="hero-select-wrap">
+        <div class="text-[11px] font-bold uppercase text-slate-300 mb-1.5">Wybierz Bohatera i Supermoc:</div>
+        <div id="hero-grid" class="grid grid-cols-2 gap-2">
+          <!-- Populated via JS -->
+        </div>
+        <div id="hero-preview" class="mt-2 bg-slate-800/90 border border-slate-700 rounded-xl p-2.5 text-xs">
+          <!-- Selected hero special ability details -->
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-2 mt-1">
+        <button id="btn-start-game" class="arcade-btn btn-green w-full py-3 text-base">▶ ROZPOCZNIJ GRĘ</button>
+        <button id="btn-open-howto" class="arcade-btn btn-blue w-full py-2 text-xs">📖 JAK GRAĆ? (ZASADY)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HOW TO PLAY MODAL -->
+  <div id="howto-modal" class="hidden fixed inset-0 z-50 bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-3">
+    <div class="arcade-modal w-full max-w-sm p-4 flex flex-col gap-3 max-h-[90dvh]">
+      <div class="flex items-center justify-between border-b border-slate-700 pb-2">
+        <h2 class="font-pixel text-xs text-amber-300">JAK GRAĆ?</h2>
+        <button id="btn-close-howto" class="arcade-btn btn-red px-2.5 py-1 text-xs">✕</button>
+      </div>
+      <div class="overflow-y-auto thin-scroll pr-1 flex flex-col gap-2.5 text-xs text-slate-200 leading-relaxed">
+        <div class="bg-slate-800/80 p-2.5 rounded-xl border border-amber-400/40">
+          <div class="font-bold text-amber-300 mb-0.5">👑 CEL GRY: URATUJ KSIĘŻNICZKĘ!</div>
+          Wejdź swoim bohaterem na <b>zamek wroga</b>, aby porwać jego Księżniczkę, a następnie wróć z nią do <b>WŁASNEGO zamku</b>. Natychmiast eliminujesz tego gracza! Ostatni na planszy wygrywa.
+        </div>
+        <div class="bg-slate-800/80 p-2.5 rounded-xl border border-sky-400/40">
+          <div class="font-bold text-sky-300 mb-0.5">1. FAZA KLOCKÓW (DROP YOUR BLOCKS!)</div>
+          Stawiasz klocek Tetromino w swoim kolorze. Dotknij planszy lub przeciągnij, użyj <b>OBRÓĆ</b> i <b>POSTAW</b>.<br/>
+          ⭐ <b>COMBO 2×2:</b> Ułożenie kwadratu 2×2 w swoim kolorze zamienia klocki w <b>GWIAZDKOWE KLOCKI</b> (+25% Supermocy, wytrzymują 2 strzały z armaty i dają szybszy ruch!).
+        </div>
+        <div class="bg-slate-800/80 p-2.5 rounded-xl border border-emerald-400/40">
+          <div class="font-bold text-emerald-300 mb-0.5">2. FAZA AKCJI (ACTION TIME!)</div>
+          • Po <b>własnych klockach</b> biegniesz daleko (4–5 pól), po trawie i wrogich klockach tylko 1 krok.<br/>
+          • Dotknij sąsiedniego wroga, by go zaatakować.<br/>
+          • Zbieraj <b>przedmioty</b>: 💣 Bomba, 🌀 Teleporter (działa z Księżniczką!), 🖌️ Pędzel, 🦘 Sprężyna, 📦 Potwór, ⭐ Gwiazda.<br/>
+          • Przy 100% paska odpal <b>SUPER MOC!</b>
+        </div>
+        <div class="bg-slate-800/80 p-2.5 rounded-xl border border-rose-400/40">
+          <div class="font-bold text-rose-300 mb-0.5">3. FAZA ARMAT (CANNON TIME!)</div>
+          Każdy zamek wystrzeliwuje <b>3 kule armatnie</b>. Wskaż 3 pola na planszy i wciśnij <b>OGNIA!</b> Kule niszczą klocki, ranią bohaterów i wybijają im porwaną Księżniczkę!
+        </div>
+      </div>
+      <button id="btn-howto-ok" class="arcade-btn btn-yellow w-full py-2.5 text-sm">ROZUMIEM!</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER / VICTORY MODAL -->
+  <div id="gameover-modal" class="hidden fixed inset-0 z-50 bg-slate-950/88 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="arcade-modal w-full max-w-xs p-5 text-center flex flex-col items-center gap-3">
+      <div class="text-5xl">🏆</div>
+      <div class="font-pixel text-xs text-amber-300">ZWYCIĘSTWO!</div>
+      <h2 id="winner-name" class="text-2xl font-bold text-white">Karciana wygrywa!</h2>
+      <p id="winner-stats" class="text-xs text-slate-300">Przetrwał 6 rund i pokonał rywali!</p>
+      <div class="flex flex-col gap-2 w-full mt-2">
+        <button id="btn-play-again" class="arcade-btn btn-green w-full py-3 text-sm">🔄 ZAGRAJ PONOWNIE</button>
+        <button id="btn-back-menu" class="arcade-btn btn-slate w-full py-2 text-xs">🏠 MENU GŁÓWNE</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* =========================================================================
+       RESET GENERATION — COMPLETE 1-TO-1 MOBILE ARCADE ENGINE
+       Single-file Canvas + Web Audio API + Smart AI + Full 3-Phase Game Loop
+       ========================================================================= */
+
+    (() => {
+      'use strict';
+
+      // -----------------------------------------------------------------------
+      // 1. CONSTANTS & HERO DEFINITIONS
+      // -----------------------------------------------------------------------
+      const GRID_SIZE = 10;
+
+      const HERO_CONFIG = [
+        {
+          id: 0,
+          key: 'yellow',
+          name: 'Karciana',
+          engName: 'Card Girl',
+          color: '#facc15',
+          dark: '#a16207',
+          light: '#fef08a',
+          castlePos: { x: 0, y: 0 },
+          castleName: 'Drewniana Wieża',
+          specialEng: 'EVIL DARK WIZARD!',
+          specialPl: 'Mroczny Czarodziej',
+          specialDesc: 'Wskaż pole — Czarodziej niszczy obszar 3×3 mroczną magią i zadaje 2 obrażenia!',
+          specialType: 'wizard',
+          emoji: '🎀'
+        },
+        {
+          id: 1,
+          key: 'red',
+          name: 'Cyborg',
+          engName: 'Cyborg',
+          color: '#ef4444',
+          dark: '#991b1b',
+          light: '#fca5a5',
+          castlePos: { x: 9, y: 0 },
+          castleName: 'Stalowa Forteca',
+          specialEng: 'ROCKET JUMP!',
+          specialPl: 'Rakietowy Skok',
+          specialDesc: 'Wskaż dowolne pole — Cyborg leci rakietą, wybucha obszar 3×3 i tam ląduje!',
+          specialType: 'rocket',
+          emoji: '🤖'
+        },
+        {
+          id: 2,
+          key: 'blue',
+          name: '4-Bit',
+          engName: '4-Bit',
+          color: '#3b82f6',
+          dark: '#1d4ed8',
+          light: '#93c5fd',
+          castlePos: { x: 0, y: 9 },
+          castleName: 'Niebieska Kopuła',
+          specialEng: '4-BIT WEAPON!',
+          specialPl: 'Laser 4-Bit',
+          specialDesc: 'Natychmiast wystrzeliwuje gigantyczny krzyżowy laser (+) przez cały rząd i kolumnę!',
+          specialType: 'laser',
+          emoji: '👾'
+        },
+        {
+          id: 3,
+          key: 'green',
+          name: 'Komandos',
+          engName: 'Marine',
+          color: '#22c55e',
+          dark: '#15803d',
+          light: '#86efac',
+          castlePos: { x: 9, y: 9 },
+          castleName: 'Bunkier Wojskowy',
+          specialEng: 'AIR STRIKE!',
+          specialPl: 'Nalot Rakietowy',
+          specialDesc: 'Wskaż strefę 2×2 — 4 precyzyjne rakiety zrzucane z nieba niszczą wszystko w celu!',
+          specialType: 'airstrike',
+          emoji: '🪖'
+        }
+      ];
+
+      // Classic 7 Tetrominoes defined as [dx, dy] offsets
+      const TETROMINOES = [
+        { name: 'I', cells: [[-1, 0], [0, 0], [1, 0], [2, 0]] },
+        { name: 'O', cells: [[0, 0], [1, 0], [0, 1], [1, 1]] },
+        { name: 'T', cells: [[-1, 0], [0, 0], [1, 0], [0, 1]] },
+        { name: 'S', cells: [[0, 0], [1, 0], [-1, 1], [0, 1]] },
+        { name: 'Z', cells: [[-1, 0], [0, 0], [0, 1], [1, 1]] },
+        { name: 'L', cells: [[-1, 0], [0, 0], [1, 0], [-1, 1]] },
+        { name: 'J', cells: [[-1, 0], [0, 0], [1, 0], [1, 1]] }
+      ];
+
+      const ITEM_TYPES = [
+        { type: 'bomb',     label: 'Bomba',       icon: '💣', desc: 'Rzuć bombę (wybuch 3×3)!' },
+        { type: 'teleport', label: 'Teleporter',  icon: '🌀', desc: 'Przenieś się na dowolne pole!' },
+        { type: 'paint',    label: 'Pędzel',      icon: '🖌️', desc: 'Pomaluj obszar 2×2 swoim kolorem!' },
+        { type: 'spring',   label: 'Sprężyna',    icon: '🦘', desc: 'Przeskocz do 3 pól nad przeszkodami!' },
+        { type: 'monster',  label: 'Potwór',      icon: '📦', desc: 'Przywołuje bojowego potwora AI!' },
+        { type: 'star',     label: 'Gwiazda',     icon: '⭐', desc: '+40% paska Supermocy!' }
+      ];
+
+      // -----------------------------------------------------------------------
+      // 2. SYNTHESIZED RETRO ARCADE WEB AUDIO ENGINE
+      // -----------------------------------------------------------------------
+      const SFX = (() => {
+        let ctx = null;
+        let muted = false;
+
+        function ensureCtx() {
+          if (muted) return null;
+          if (!ctx) {
+            const AudioCtx = window.AudioContext || window.webkitAudioContext;
+            if (AudioCtx) ctx = new AudioCtx();
+          }
+          if (ctx && ctx.state === 'suspended') {
+            ctx.resume().catch(() => {});
+          }
+          return ctx;
+        }
+
+        function tone(freq, type, duration, vol = 0.14, slideTo = null, delay = 0) {
+          const c = ensureCtx();
+          if (!c) return;
+          try {
+            const now = c.currentTime + delay;
+            const osc = c.createOscillator();
+            const gain = c.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, now);
+            if (slideTo) {
+              osc.frequency.exponentialRampToValueAtTime(Math.max(20, slideTo), now + duration);
+            }
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+            osc.connect(gain);
+            gain.connect(c.destination);
+            osc.start(now);
+            osc.stop(now + duration);
+          } catch (e) {}
+        }
+
+        function noise(duration, vol = 0.18, delay = 0, highpass = 120) {
+          const c = ensureCtx();
+          if (!c) return;
+          try {
+            const now = c.currentTime + delay;
+            const bufferSize = Math.floor(c.sampleRate * duration);
+            const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+            const data = buffer.getChannelData(0);
+            for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+            const src = c.createBufferSource();
+            src.buffer = buffer;
+
+            const filter = c.createBiquadFilter();
+            filter.type = 'lowpass';
+            filter.frequency.setValueAtTime(highpass * 8, now);
+            filter.frequency.exponentialRampToValueAtTime(highpass, now + duration);
+
+            const gain = c.createGain();
+            gain.gain.setValueAtTime(vol, now);
+            gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+
+            src.connect(filter);
+            filter.connect(gain);
+            gain.connect(c.destination);
+            src.start(now);
+          } catch (e) {}
+        }
+
+        return {
+          toggleMute() {
+            muted = !muted;
+            return muted;
+          },
+          isMuted() { return muted; },
+          click() { tone(520, 'square', 0.05, 0.08, 680); },
+          rotate() { tone(360, 'triangle', 0.06, 0.1, 560); },
+          drop() {
+            tone(160, 'square', 0.11, 0.14, 70);
+            tone(90, 'triangle', 0.12, 0.16, 45);
+          },
+          combo() {
+            [523, 659, 784, 1046].forEach((f, i) => tone(f, 'square', 0.12, 0.11, null, i * 0.065));
+          },
+          step() { tone(280, 'triangle', 0.055, 0.09, 420); },
+          pickup() {
+            tone(587, 'square', 0.08, 0.1, 880, 0);
+            tone(880, 'square', 0.12, 0.1, 1174, 0.07);
+          },
+          hit() {
+            noise(0.14, 0.22);
+            tone(180, 'sawtooth', 0.16, 0.15, 55);
+          },
+          cannonLaunch() {
+            tone(140, 'triangle', 0.18, 0.18, 42);
+            noise(0.12, 0.15, 0, 260);
+          },
+          explosion() {
+            noise(0.35, 0.28, 0, 140);
+            tone(110, 'sawtooth', 0.28, 0.16, 30);
+          },
+          laser() {
+            tone(1200, 'sawtooth', 0.35, 0.15, 180);
+            tone(900, 'square', 0.35, 0.12, 120, 0.04);
+          },
+          special() {
+            [330, 440, 554, 659, 880].forEach((f, i) => tone(f, 'sawtooth', 0.16, 0.1, f * 1.04, i * 0.05));
+          },
+          rescue() {
+            const notes = [523, 659, 784, 1046, 784, 1046];
+            const times = [0, 0.09, 0.18, 0.27, 0.42, 0.52];
+            notes.forEach((f, i) => tone(f, 'square', 0.16, 0.13, null, times[i]));
+          },
+          win() {
+            const notes = [523, 659, 784, 1046, 1318, 1046, 1568];
+            notes.forEach((f, i) => tone(f, 'square', 0.18, 0.12, null, i * 0.11));
+          }
+        };
+      })();
+
+      // -----------------------------------------------------------------------
+      // 3. GAME STATE
+      // -----------------------------------------------------------------------
+      const state = {
+        mode: 'ai',          // 'ai' | 'local'
+        humanCount: 2,       // used in 'local' mode (2-4)
+        selectedHero: 0,     // chosen hero in 'ai' mode
+
+        running: false,
+        round: 1,
+        phase: 'MENU',       // 'BLOCK' | 'ACTION' | 'CANNON' | 'ANIMATING' | 'GAMEOVER'
+        turnOrder: [0, 1, 2, 3],
+        turnIdx: 0,          // index into turnOrder for current active player
+
+        // 10x10 Grid: each cell = { owner: -1..3, type: 'empty'|'normal'|'star', castle: -1..3, flash: 0 }
+        grid: [],
+        players: [],
+        items: [],           // { id, x, y, type }
+        monsters: [],        // { id, owner, x, y, hp, kind, animX, animY }
+
+        // Block phase interactive state
+        currentPiece: null,  // { cells: [[dx,dy],...], x, y, valid }
+        isDraggingPiece: false,
+
+        // Action phase interactive state
+        actionSubMode: 'move', // 'move' | 'bomb' | 'teleport' | 'paint' | 'spring' | 'wizard' | 'rocket' | 'airstrike'
+        reachable: new Map(),  // "x,y" -> { cost, path }
+        attackTargets: [],     // { x, y, type: 'hero'|'monster', ref }
+        heroMoved: false,
+        heroActed: false,
+
+        // Cannon phase interactive state
+        cannonTargets: [],     // Array of { x, y } for current human player
+        allCannonQueue: [],    // Collected shots from all alive players: { fromPlayer, tx, ty }
+
+        // Visual FX
+        projectiles: [],       // Arcing cannonballs & missiles
+        particles: [],         // Explosions, debris, stars
+        floatingTexts: [],     // "COMBO!", "-1 HP", etc.
+        beams: [],             // 4-Bit cross laser beams
+        wizardFx: null,        // Evil Dark Wizard temporary sprite
+        shake: 0,
+        time: 0,
+
+        // Input lock during animations / AI
+        busy: false
+      };
+
+      // -----------------------------------------------------------------------
+      // 4. DOM REFERENCES
+      // -----------------------------------------------------------------------
+      const canvas = document.getElementById('game-canvas');
+      const ctx = canvas.getContext('2d');
+      const canvasWrap = document.getElementById('canvas-wrap');
+
+      const hudEls = [
+        document.getElementById('hud-p0'),
+        document.getElementById('hud-p1'),
+        document.getElementById('hud-p2'),
+        document.getElementById('hud-p3')
+      ];
+      const roundLabel = document.getElementById('round-label');
+      const phaseMini = document.getElementById('phase-mini');
+      const turnPill = document.getElementById('turn-pill');
+      const actionHint = document.getElementById('action-hint');
+      const dockButtons = document.getElementById('dock-buttons');
+
+      const cutinOverlay = document.getElementById('cutin-overlay');
+      const cutinStrip = document.getElementById('cutin-strip');
+      const cutinTitle = document.getElementById('cutin-title');
+      const cutinSub = document.getElementById('cutin-sub');
+
+      const startModal = document.getElementById('start-modal');
+      const howtoModal = document.getElementById('howto-modal');
+      const gameoverModal = document.getElementById('gameover-modal');
+      const handoffModal = document.getElementById('handoff-modal');
+
+      // Layout metrics for canvas
+      let boardMetrics = {
+        size: 320,
+        border: 14,
+        gridOrigin: 14,
+        cellSize: 29.2
+      };
+
+      // -----------------------------------------------------------------------
+      // 5. HELPERS & GRID UTILITIES
+      // -----------------------------------------------------------------------
+      const wait = (ms) => new Promise(res => setTimeout(res, ms));
+      const inBounds = (x, y) => x >= 0 && x < GRID_SIZE && y >= 0 && y < GRID_SIZE;
+      const keyOf = (x, y) => `${x},${y}`;
+
+      function getCurrentPlayer() {
+        const pid = state.turnOrder[state.turnIdx];
+        return state.players[pid];
+      }
+
+      function getAlivePlayers() {
+        return state.players.filter(p => p.alive);
+      }
+
+      function getHeroAt(x, y, excludeId = -1) {
+        return state.players.find(p => p.alive && !p.ko && p.id !== excludeId && p.x === x && p.y === y) || null;
+      }
+
+      function getMonsterAt(x, y) {
+        return state.monsters.find(m => m.hp > 0 && m.x === x && m.y === y) || null;
+      }
+
+      function getItemAt(x, y) {
+        return state.items.find(it => it.x === x && it.y === y) || null;
+      }
+
+      function showCutIn(title, subtitle, bgClass = 'from-indigo-900 via-purple-700 to-indigo-900', duration = 1200) {
+        return new Promise(resolve => {
+          cutinTitle.textContent = title;
+          cutinSub.textContent = subtitle;
+          cutinStrip.className = `cutin-strip w-full py-4 px-4 bg-gradient-to-r ${bgClass} flex flex-col items-center justify-center text-center`;
+          cutinOverlay.style.opacity = '1';
+          cutinOverlay.classList.add('show');
+          setTimeout(() => {
+            cutinOverlay.classList.remove('show');
+            cutinOverlay.style.opacity = '0';
+            setTimeout(resolve, 220);
+          }, duration);
+        });
+      }
+
+      function addFloatingText(gx, gy, text, color = '#fde047', size = 14) {
+        state.floatingTexts.push({
+          x: gx + 0.5,
+          y: gy + 0.35,
+          text,
+          color,
+          size,
+          life: 1.0,
+          vy: -0.9
+        });
+      }
+
+      function spawnParticles(gx, gy, color, count = 14, speed = 2.6) {
+        for (let i = 0; i < count; i++) {
+          const ang = Math.random() * Math.PI * 2;
+          const spd = (0.4 + Math.random() * 0.9) * speed;
+          state.particles.push({
+            x: gx + 0.5,
+            y: gy + 0.5,
+            vx: Math.cos(ang) * spd,
+            vy: Math.sin(ang) * spd,
+            size: 2.5 + Math.random() * 4.5,
+            color,
+            life: 0.65 + Math.random() * 0.45,
+            maxLife: 1.1
+          });
+        }
+      }
+
+      function triggerShake(amount = 8) {
+        state.shake = Math.max(state.shake, amount);
+      }
+
+      // -----------------------------------------------------------------------
+      // 6. INITIALIZATION & NEW GAME SETUP
+      // -----------------------------------------------------------------------
+      function initNewGame() {
+        state.round = 1;
+        state.running = true;
+        state.busy = false;
+        state.items = [];
+        state.monsters = [];
+        state.projectiles = [];
+        state.particles = [];
+        state.floatingTexts = [];
+        state.beams = [];
+        state.wizardFx = null;
+        state.cannonTargets = [];
+        state.allCannonQueue = [];
+        state.turnOrder = [0, 1, 2, 3];
+
+        // Create 4 Players
+        state.players = HERO_CONFIG.map((cfg, i) => {
+          let isHuman = false;
+          if (state.mode === 'ai') {
+            isHuman = (i === state.selectedHero);
+          } else {
+            isHuman = (i < state.humanCount);
+          }
+          return {
+            ...cfg,
+            isHuman,
+            alive: true,
+            ko: false,
+            hp: 2,
+            maxHp: 2,
+            charge: 0,
+            x: cfg.castlePos.x,
+            y: cfg.castlePos.y,
+            renderX: cfg.castlePos.x,
+            renderY: cfg.castlePos.y,
+            princessHome: true,
+            carryingPrincessOf: -1, // -1 or enemy player id
+            kills: 0,
+            rescues: 0
+          };
+        });
+
+        // Build 10x10 Grid
+        state.grid = [];
+        for (let y = 0; y < GRID_SIZE; y++) {
+          const row = [];
+          for (let x = 0; x < GRID_SIZE; x++) {
+            row.push({ owner: -1, type: 'empty', castle: -1, flash: 0 });
+          }
+          state.grid.push(row);
+        }
+
+        // Place 4 Corner Castles
+        HERO_CONFIG.forEach(cfg => {
+          const c = state.grid[cfg.castlePos.y][cfg.castlePos.x];
+          c.castle = cfg.id;
+          c.owner = cfg.id;
+          c.type = 'castle';
+        });
+
+        // Starting Perimeter Ring connecting the 4 Castles (4 blocks per adjacent player on each edge,
+        // starting right next to each castle so heroes can immediately run & battle)
+        // Top edge (y=0): Yellow (1..4), Red (5..8)
+        for (let x = 1; x <= 4; x++) setBlock(x, 0, 0, 'normal');
+        for (let x = 5; x <= 8; x++) setBlock(x, 0, 1, 'normal');
+        // Bottom edge (y=9): Blue (1..4), Green (5..8)
+        for (let x = 1; x <= 4; x++) setBlock(x, 9, 2, 'normal');
+        for (let x = 5; x <= 8; x++) setBlock(x, 9, 3, 'normal');
+        // Left edge (x=0): Yellow (1..4), Blue (5..8)
+        for (let y = 1; y <= 4; y++) setBlock(0, y, 0, 'normal');
+        for (let y = 5; y <= 8; y++) setBlock(0, y, 2, 'normal');
+        // Right edge (x=9): Red (1..4), Green (5..8)
+        for (let y = 1; y <= 4; y++) setBlock(9, y, 1, 'normal');
+        for (let y = 5; y <= 8; y++) setBlock(9, y, 3, 'normal');
+
+        // Spawn 2 initial items in the central grassy area
+        spawnRandomItems(2);
+
+        startModal.classList.add('hidden');
+        gameoverModal.classList.add('hidden');
+        updateHUD();
+        startBlockPhase();
+      }
+
+      function setBlock(x, y, owner, type = 'normal') {
+        if (!inBounds(x, y)) return;
+        const cell = state.grid[y][x];
+        if (cell.castle !== -1) return;
+        cell.owner = owner;
+        cell.type = type;
+      }
+
+      function spawnRandomItems(count = 1) {
+        const maxItems = 4;
+        for (let n = 0; n < count; n++) {
+          if (state.items.length >= maxItems) break;
+          const candidates = [];
+          for (let y = 1; y < GRID_SIZE - 1; y++) {
+            for (let x = 1; x < GRID_SIZE - 1; x++) {
+              if (!getHeroAt(x, y) && !getMonsterAt(x, y) && !getItemAt(x, y)) {
+                candidates.push({ x, y });
+              }
+            }
+          }
+          if (!candidates.length) break;
+          const pick = candidates[Math.floor(Math.random() * candidates.length)];
+          const spec = ITEM_TYPES[Math.floor(Math.random() * ITEM_TYPES.length)];
+          state.items.push({
+            id: Math.random().toString(36).slice(2),
+            x: pick.x,
+            y: pick.y,
+            type: spec.type
+          });
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 7. PHASE 1: BLOCK TIME ("DROP YOUR BLOCKS!")
+      // -----------------------------------------------------------------------
+      async function startBlockPhase() {
+        if (!state.running) return;
+        state.phase = 'BLOCK';
+        state.busy = true;
+        state.currentPiece = null;
+        state.turnIdx = 0;
+
+        // Rotate starting player order each round for fairness
+        const shift = (state.round - 1) % 4;
+        state.turnOrder = [0, 1, 2, 3].map(i => (i + shift) % 4).filter(id => state.players[id].alive);
+
+        updateHUD();
+        SFX.click();
+        await showCutIn('DROP YOUR BLOCKS!', `Runda ${state.round} — Postaw swój klocek!`, 'from-sky-800 via-blue-600 to-sky-800', 1050);
+
+        state.busy = false;
+        nextBlockTurn();
+      }
+
+      async function nextBlockTurn() {
+        if (!state.running) return;
+        if (state.turnIdx >= state.turnOrder.length) {
+          startActionPhase();
+          return;
+        }
+
+        const player = getCurrentPlayer();
+        if (!player || !player.alive) {
+          state.turnIdx++;
+          nextBlockTurn();
+          return;
+        }
+
+        updateHUD();
+
+        // Pick a random Tetromino
+        const base = TETROMINOES[Math.floor(Math.random() * TETROMINOES.length)];
+        const pieceCells = base.cells.map(c => [...c]);
+
+        if (player.isHuman) {
+          if (state.mode === 'local') {
+            await showHandoffModal(player, 'Faza Klocków — ustaw swój Tetromino!');
+          }
+          // Find a valid starting position near center or player's territory
+          const startPos = findFirstValidPlacement(pieceCells, player.id) || { x: 4, y: 4 };
+          state.currentPiece = {
+            cells: pieceCells,
+            x: startPos.x,
+            y: startPos.y,
+            valid: isValidPiecePlacement(pieceCells, startPos.x, startPos.y)
+          };
+          renderControlDock();
+        } else {
+          // AI Turn
+          state.busy = true;
+          renderControlDock();
+          await wait(240);
+          const best = computeBestAIBlock(pieceCells, player);
+          if (best) {
+            state.currentPiece = { cells: best.cells, x: best.x, y: best.y, valid: true };
+            await wait(220);
+            placeCurrentPiece(player);
+          } else {
+            addFloatingText(player.castlePos.x, player.castlePos.y, 'POMINIĘTO', '#cbd5e1', 11);
+          }
+          state.currentPiece = null;
+          await wait(260);
+          state.busy = false;
+          state.turnIdx++;
+          nextBlockTurn();
+        }
+      }
+
+      function rotateCells(cells) {
+        return cells.map(([dx, dy]) => [-dy, dx]);
+      }
+
+      function isValidPiecePlacement(cells, cx, cy) {
+        for (const [dx, dy] of cells) {
+          const x = cx + dx;
+          const y = cy + dy;
+          if (!inBounds(x, y)) return false;
+          const cell = state.grid[y][x];
+          if (cell.castle !== -1 || cell.type !== 'empty') return false;
+          if (getHeroAt(x, y) || getMonsterAt(x, y)) return false;
+        }
+        return true;
+      }
+
+      function findFirstValidPlacement(cells, playerId) {
+        const p = state.players[playerId];
+        // Sort tiles by proximity to center/player
+        const coords = [];
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const dist = Math.hypot(x - (p.castlePos.x * 0.4 + 4.5 * 0.6), y - (p.castlePos.y * 0.4 + 4.5 * 0.6));
+            coords.push({ x, y, dist });
+          }
+        }
+        coords.sort((a, b) => a.dist - b.dist);
+        for (const c of coords) {
+          if (isValidPiecePlacement(cells, c.x, c.y)) return { x: c.x, y: c.y };
+        }
+        return null;
+      }
+
+      function rotateCurrentPiece() {
+        if (!state.currentPiece || state.busy) return;
+        const rotated = rotateCells(state.currentPiece.cells);
+        state.currentPiece.cells = rotated;
+        // Nudge inside bounds if rotation pushed out of bounds
+        let { x, y } = state.currentPiece;
+        for (const [dx, dy] of rotated) {
+          if (x + dx < 0) x += -(x + dx);
+          if (x + dx >= GRID_SIZE) x -= (x + dx - (GRID_SIZE - 1));
+          if (y + dy < 0) y += -(y + dy);
+          if (y + dy >= GRID_SIZE) y -= (y + dy - (GRID_SIZE - 1));
+        }
+        state.currentPiece.x = x;
+        state.currentPiece.y = y;
+        state.currentPiece.valid = isValidPiecePlacement(rotated, x, y);
+        SFX.rotate();
+        renderControlDock();
+      }
+
+      function placeCurrentPiece(player) {
+        if (!state.currentPiece) return false;
+        const { cells, x, y } = state.currentPiece;
+        if (!isValidPiecePlacement(cells, x, y)) return false;
+
+        for (const [dx, dy] of cells) {
+          const tx = x + dx;
+          const ty = y + dy;
+          setBlock(tx, ty, player.id, 'normal');
+          state.grid[ty][tx].flash = 1.0;
+          spawnParticles(tx, ty, player.light, 5, 1.5);
+        }
+        SFX.drop();
+
+        // Check for 2x2 Star Combos!
+        const newStars = checkStarCombos(player.id);
+        if (newStars > 0) {
+          player.charge = Math.min(100, player.charge + newStars * 25);
+          SFX.combo();
+          addFloatingText(x, y, `COMBO! +${newStars * 25}%`, '#fef08a', 15);
+          triggerShake(5);
+        }
+
+        updateHUD();
+        return true;
+      }
+
+      function checkStarCombos(playerId) {
+        const starCoords = new Set();
+        for (let y = 0; y < GRID_SIZE - 1; y++) {
+          for (let x = 0; x < GRID_SIZE - 1; x++) {
+            const c00 = state.grid[y][x];
+            const c10 = state.grid[y][x + 1];
+            const c01 = state.grid[y + 1][x];
+            const c11 = state.grid[y + 1][x + 1];
+            if (
+              c00.owner === playerId && (c00.type === 'normal' || c00.type === 'star') &&
+              c10.owner === playerId && (c10.type === 'normal' || c10.type === 'star') &&
+              c01.owner === playerId && (c01.type === 'normal' || c01.type === 'star') &&
+              c11.owner === playerId && (c11.type === 'normal' || c11.type === 'star')
+            ) {
+              starCoords.add(keyOf(x, y));
+              starCoords.add(keyOf(x + 1, y));
+              starCoords.add(keyOf(x, y + 1));
+              starCoords.add(keyOf(x + 1, y + 1));
+            }
+          }
+        }
+
+        let newlyTransformed = 0;
+        starCoords.forEach(k => {
+          const [sx, sy] = k.split(',').map(Number);
+          const cell = state.grid[sy][sx];
+          if (cell.type === 'normal') {
+            cell.type = 'star';
+            cell.flash = 1.4;
+            newlyTransformed++;
+            spawnParticles(sx, sy, '#ffffff', 8, 2.2);
+          }
+        });
+        return newlyTransformed;
+      }
+
+      function computeBestAIBlock(baseCells, player) {
+        let best = null;
+        let bestScore = -Infinity;
+
+        // Target nearest alive enemy castle
+        const enemies = state.players.filter(p => p.alive && p.id !== player.id);
+        const targetCastle = enemies.length
+          ? enemies.reduce((a, b) =>
+              Math.hypot(a.castlePos.x - player.x, a.castlePos.y - player.y) <
+              Math.hypot(b.castlePos.x - player.x, b.castlePos.y - player.y) ? a : b
+            ).castlePos
+          : { x: 4.5, y: 4.5 };
+
+        let rot = baseCells;
+        for (let r = 0; r < 4; r++) {
+          for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+              if (!isValidPiecePlacement(rot, x, y)) continue;
+              let score = 0;
+
+              // Check adjacency to own blocks & potential 2x2 combos
+              const placedSet = new Set(rot.map(([dx, dy]) => keyOf(x + dx, y + dy)));
+              for (const [dx, dy] of rot) {
+                const tx = x + dx;
+                const ty = y + dy;
+                // Prefer building near own blocks/hero
+                const neighbors = [[1,0],[-1,0],[0,1],[0,-1]];
+                for (const [nx, ny] of neighbors) {
+                  if (inBounds(tx + nx, ty + ny)) {
+                    const nb = state.grid[ty + ny][tx + nx];
+                    if (nb.owner === player.id) score += 6;
+                  }
+                }
+                // Bonus for getting closer to enemy castle or hero
+                score -= Math.hypot(tx - targetCastle.x, ty - targetCastle.y) * 1.1;
+                score -= Math.hypot(tx - player.x, ty - player.y) * 0.7;
+              }
+
+              // Simulate 2x2 combo count
+              let combos = 0;
+              for (let cy = Math.max(0, y - 2); cy <= Math.min(GRID_SIZE - 2, y + 2); cy++) {
+                for (let cx = Math.max(0, x - 2); cx <= Math.min(GRID_SIZE - 2, x + 2); cx++) {
+                  const pts = [[cx, cy], [cx + 1, cy], [cx, cy + 1], [cx + 1, cy + 1]];
+                  const allOwn = pts.every(([px, py]) =>
+                    placedSet.has(keyOf(px, py)) ||
+                    (state.grid[py][px].owner === player.id && state.grid[py][px].type !== 'castle')
+                  );
+                  if (allOwn) combos++;
+                }
+              }
+              score += combos * 35 + Math.random() * 2;
+
+              if (score > bestScore) {
+                bestScore = score;
+                best = { cells: rot.map(c => [...c]), x, y };
+              }
+            }
+          }
+          rot = rotateCells(rot);
+        }
+        return best;
+      }
+
+      // -----------------------------------------------------------------------
+      // 8. PHASE 2: ACTION TIME (MOVEMENT, ITEMS, COMBAT, SPECIALS, RESCUE)
+      // -----------------------------------------------------------------------
+      async function startActionPhase() {
+        if (!state.running) return;
+        state.phase = 'ACTION';
+        state.busy = true;
+        state.turnIdx = 0;
+        state.turnOrder = state.turnOrder.filter(id => state.players[id].alive);
+
+        updateHUD();
+        await showCutIn('ACTION TIME!', 'Ruszaj, zbieraj przedmioty i ratuj Księżniczkę!', 'from-emerald-800 via-green-600 to-emerald-800', 1000);
+
+        state.busy = false;
+        nextActionTurn();
+      }
+
+      async function nextActionTurn() {
+        if (!state.running) return;
+        if (checkVictory()) return;
+
+        if (state.turnIdx >= state.turnOrder.length) {
+          startCannonPhase();
+          return;
+        }
+
+        const player = getCurrentPlayer();
+        if (!player || !player.alive) {
+          state.turnIdx++;
+          nextActionTurn();
+          return;
+        }
+
+        // First, run any summoned monsters belonging to this player
+        const myMonsters = state.monsters.filter(m => m.owner === player.id && m.hp > 0);
+        if (myMonsters.length > 0) {
+          state.busy = true;
+          for (const m of myMonsters) {
+            await runMonsterAI(m);
+            if (checkVictory()) return;
+          }
+          state.busy = false;
+        }
+
+        // If hero is KO'd this round, skip hero action
+        if (player.ko) {
+          addFloatingText(player.castlePos.x, player.castlePos.y, 'OGŁUSZONY!', '#f87171', 12);
+          await wait(450);
+          state.turnIdx++;
+          nextActionTurn();
+          return;
+        }
+
+        state.actionSubMode = 'move';
+        state.heroMoved = false;
+        state.heroActed = false;
+        updateHUD();
+
+        if (player.isHuman) {
+          if (state.mode === 'local') {
+            await showHandoffModal(player, 'Faza Akcji — porusz bohatera lub użyj mocy!');
+          }
+          computeHeroReachable(player);
+          renderControlDock();
+        } else {
+          state.busy = true;
+          renderControlDock();
+          await wait(280);
+          await runHeroAI(player);
+          if (checkVictory()) return;
+          await wait(300);
+          state.busy = false;
+          state.turnIdx++;
+          nextActionTurn();
+        }
+      }
+
+      function computeHeroReachable(player) {
+        state.reachable = new Map();
+        state.attackTargets = [];
+
+        if (!state.heroMoved) {
+          // Dijkstra-style BFS:
+          // Max MP = 5.
+          // Own Star block = 1 MP (up to 5 tiles)
+          // Own Normal block = 1.25 MP (up to 4 tiles)
+          // Grass / Enemy block / Castle = consumes remaining MP (so you can always take 1 step onto it!)
+          const maxMP = 5;
+          const bestCost = new Map();
+          const queue = [{ x: player.x, y: player.y, cost: 0, path: [] }];
+          bestCost.set(keyOf(player.x, player.y), 0);
+
+          while (queue.length > 0) {
+            queue.sort((a, b) => a.cost - b.cost);
+            const cur = queue.shift();
+
+            const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            for (const [dx, dy] of dirs) {
+              const nx = cur.x + dx;
+              const ny = cur.y + dy;
+              if (!inBounds(nx, ny)) continue;
+
+              // Can't walk through living heroes or monsters
+              if (getHeroAt(nx, ny, player.id) || getMonsterAt(nx, ny)) continue;
+
+              const cell = state.grid[ny][nx];
+              let stepCost = 5; // grass or enemy block = 1 final step
+              if (cell.owner === player.id && cell.type === 'star') stepCost = 1;
+              else if (cell.owner === player.id && cell.type === 'normal') stepCost = 1.25;
+              else if (cell.castle === player.id) stepCost = 1;
+
+              let nextCost = cur.cost + stepCost;
+              // Allow stepping onto grass/enemy/castle if we still had ANY movement left (< maxMP)
+              if (stepCost === 5 && cur.cost < maxMP) {
+                nextCost = maxMP;
+              }
+              if (nextCost > maxMP) continue;
+
+              const k = keyOf(nx, ny);
+              if (!bestCost.has(k) || nextCost < bestCost.get(k)) {
+                bestCost.set(k, nextCost);
+                const newPath = [...cur.path, { x: nx, y: ny }];
+                state.reachable.set(k, { cost: nextCost, path: newPath });
+                if (nextCost < maxMP) {
+                  queue.push({ x: nx, y: ny, cost: nextCost, path: newPath });
+                }
+              }
+            }
+          }
+        }
+
+        // Adjacent enemies from current hero position can be attacked
+        if (!state.heroActed) {
+          const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+          for (const [dx, dy] of dirs) {
+            const ax = player.x + dx;
+            const ay = player.y + dy;
+            if (!inBounds(ax, ay)) continue;
+            const eh = getHeroAt(ax, ay, player.id);
+            if (eh) state.attackTargets.push({ x: ax, y: ay, type: 'hero', ref: eh });
+            const em = getMonsterAt(ax, ay);
+            if (em && em.owner !== player.id) state.attackTargets.push({ x: ax, y: ay, type: 'monster', ref: em });
+          }
+        }
+      }
+
+      async function moveHeroAlongPath(player, path) {
+        state.busy = true;
+        for (const step of path) {
+          const sx = player.renderX;
+          const sy = player.renderY;
+          const duration = 110;
+          const start = performance.now();
+          SFX.step();
+          await new Promise(res => {
+            function anim(now) {
+              const t = Math.min(1, (now - start) / duration);
+              player.renderX = sx + (step.x - sx) * t;
+              player.renderY = sy + (step.y - sy) * t;
+              if (t < 1) requestAnimationFrame(anim);
+              else res();
+            }
+            requestAnimationFrame(anim);
+          });
+          player.x = step.x;
+          player.y = step.y;
+          player.renderX = step.x;
+          player.renderY = step.y;
+
+          // Check Castle / Princess Interaction immediately on stepping onto castle
+          const rescued = await checkCastleInteraction(player);
+          if (rescued) {
+            state.busy = false;
+            return 'ended';
+          }
+
+          // Check Item pickup
+          const item = getItemAt(player.x, player.y);
+          if (item) {
+            state.items = state.items.filter(it => it.id !== item.id);
+            SFX.pickup();
+            const result = await handleItemPickup(player, item);
+            if (result === 'targeting') {
+              state.heroMoved = true;
+              state.busy = false;
+              renderControlDock();
+              return 'targeting';
+            }
+          }
+        }
+        state.heroMoved = true;
+        state.busy = false;
+        return 'moved';
+      }
+
+      async function checkCastleInteraction(player) {
+        const cell = state.grid[player.y][player.x];
+        if (cell.castle === -1) return false;
+
+        // 1. Stepping onto an ENEMY castle -> Grab their Princess!
+        if (cell.castle !== player.id) {
+          const enemy = state.players[cell.castle];
+          if (enemy && enemy.alive && enemy.princessHome && player.carryingPrincessOf === -1) {
+            enemy.princessHome = false;
+            player.carryingPrincessOf = enemy.id;
+            SFX.pickup();
+            addFloatingText(player.x, player.y, 'PORWANO KSIĘŻNICZKĘ!', '#f472b6', 13);
+            spawnParticles(player.x, player.y, '#f472b6', 18, 2.5);
+            updateHUD();
+          }
+        }
+
+        // 2. Stepping onto OWN castle while carrying an enemy Princess -> RESCUE & ELIMINATE!
+        if (cell.castle === player.id && player.carryingPrincessOf !== -1) {
+          const victim = state.players[player.carryingPrincessOf];
+          player.carryingPrincessOf = -1;
+          player.rescues++;
+          player.charge = 100; // Full special refill!
+
+          SFX.rescue();
+          await showCutIn(
+            'PRINCESS RESCUED!',
+            `${player.name} ratuje Księżniczkę i eliminuje: ${victim.name}!`,
+            'from-pink-700 via-rose-500 to-amber-500',
+            1500
+          );
+
+          eliminatePlayer(victim);
+          updateHUD();
+          return checkVictory();
+        }
+        return false;
+      }
+
+      function eliminatePlayer(victim) {
+        victim.alive = false;
+        victim.ko = true;
+        victim.hp = 0;
+
+        // If victim was carrying someone's princess, return her home
+        if (victim.carryingPrincessOf !== -1) {
+          state.players[victim.carryingPrincessOf].princessHome = true;
+          victim.carryingPrincessOf = -1;
+        }
+
+        // Shatter all of victim's blocks in a massive particle explosion!
+        triggerShake(14);
+        SFX.explosion();
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const cell = state.grid[y][x];
+            if (cell.owner === victim.id && cell.castle === -1) {
+              cell.owner = -1;
+              cell.type = 'empty';
+              spawnParticles(x, y, victim.color, 6, 3.0);
+            }
+          }
+        }
+        // Remove victim's monsters
+        state.monsters = state.monsters.filter(m => m.owner !== victim.id);
+      }
+
+      async function handleItemPickup(player, item) {
+        const spec = ITEM_TYPES.find(t => t.type === item.type);
+        addFloatingText(player.x, player.y, `${spec.icon} ${spec.label.toUpperCase()}!`, '#38bdf8', 13);
+
+        if (item.type === 'star') {
+          player.charge = Math.min(100, player.charge + 40);
+          spawnParticles(player.x, player.y, '#fde047', 16, 2.5);
+          updateHUD();
+          return 'done';
+        }
+
+        if (item.type === 'monster') {
+          summonMonsterNear(player);
+          return 'done';
+        }
+
+        // Interactive targeting items (Bomb, Teleporter, Paintbrush, Spring)
+        if (player.isHuman) {
+          state.actionSubMode = item.type;
+          return 'targeting';
+        } else {
+          // AI immediately uses the picked-up item smartly
+          await wait(240);
+          await useItemByAI(player, item.type);
+          return 'done';
+        }
+      }
+
+      function summonMonsterNear(player) {
+        const dirs = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+        let spot = null;
+        for (const [dx, dy] of dirs) {
+          const nx = player.x + dx;
+          const ny = player.y + dy;
+          if (inBounds(nx, ny) && !getHeroAt(nx, ny) && !getMonsterAt(nx, ny) && state.grid[ny][nx].castle === -1) {
+            spot = { x: nx, y: ny };
+            break;
+          }
+        }
+        if (!spot) return;
+        const kinds = ['wolf', 'boar', 'bug'];
+        state.monsters.push({
+          id: Math.random().toString(36).slice(2),
+          owner: player.id,
+          x: spot.x,
+          y: spot.y,
+          renderX: spot.x,
+          renderY: spot.y,
+          hp: 2,
+          kind: kinds[Math.floor(Math.random() * kinds.length)]
+        });
+        spawnParticles(spot.x, spot.y, player.color, 14, 2.2);
+        addFloatingText(spot.x, spot.y, 'POTWÓR!', '#fb923c', 12);
+      }
+
+      async function performAttack(attacker, targetObj) {
+        state.busy = true;
+        SFX.hit();
+        triggerShake(7);
+
+        // Quick lunge animation
+        const ox = attacker.renderX;
+        const oy = attacker.renderY;
+        attacker.renderX = ox + (targetObj.x - ox) * 0.45;
+        attacker.renderY = oy + (targetObj.y - oy) * 0.45;
+        await wait(90);
+        attacker.renderX = ox;
+        attacker.renderY = oy;
+
+        if (targetObj.type === 'hero') {
+          damageHero(targetObj.ref, 1, attacker);
+        } else {
+          damageMonster(targetObj.ref, 1);
+        }
+
+        state.heroActed = true;
+        state.busy = false;
+        updateHUD();
+      }
+
+      function damageHero(victim, dmg, attacker = null) {
+        if (!victim.alive || victim.ko) return;
+        victim.hp = Math.max(0, victim.hp - dmg);
+        spawnParticles(victim.x, victim.y, '#ef4444', 14, 2.8);
+        addFloatingText(victim.x, victim.y, `-${dmg} HP`, '#fca5a5', 14);
+
+        // Drop carried princess on hit!
+        if (victim.carryingPrincessOf !== -1) {
+          const pOwner = state.players[victim.carryingPrincessOf];
+          pOwner.princessHome = true;
+          victim.carryingPrincessOf = -1;
+          addFloatingText(victim.x, victim.y - 0.5, 'Księżniczka uciekła!', '#f472b6', 11);
+        }
+
+        if (victim.hp <= 0) {
+          victim.ko = true;
+          if (attacker) {
+            attacker.kills++;
+            attacker.charge = Math.min(100, attacker.charge + 25);
+          }
+          addFloatingText(victim.x, victim.y, 'K.O.!', '#fde047', 16);
+          spawnParticles(victim.x, victim.y, victim.color, 22, 3.5);
+        }
+        updateHUD();
+      }
+
+      function damageMonster(monster, dmg) {
+        monster.hp -= dmg;
+        spawnParticles(monster.x, monster.y, '#fb923c', 10, 2.2);
+        addFloatingText(monster.x, monster.y, `-${dmg}`, '#fdba74', 12);
+        if (monster.hp <= 0) {
+          state.monsters = state.monsters.filter(m => m.id !== monster.id);
+          spawnParticles(monster.x, monster.y, '#ffffff', 14, 2.6);
+        }
+      }
+
+      function explodeArea(cx, cy, radius, dmg, attacker = null, destroyBlocks = true) {
+        triggerShake(10);
+        SFX.explosion();
+        for (let dy = -radius; dy <= radius; dy++) {
+          for (let dx = -radius; dx <= radius; dx++) {
+            const x = cx + dx;
+            const y = cy + dy;
+            if (!inBounds(x, y)) continue;
+            spawnParticles(x, y, '#fb923c', 8, 2.6);
+            spawnParticles(x, y, '#fde047', 5, 1.8);
+
+            if (destroyBlocks) {
+              damageBlockAt(x, y);
+            }
+            const h = getHeroAt(x, y);
+            if (h && (!attacker || h.id !== attacker.id)) {
+              damageHero(h, dmg, attacker);
+            }
+            const m = getMonsterAt(x, y);
+            if (m && (!attacker || m.owner !== attacker.id)) {
+              damageMonster(m, dmg);
+            }
+          }
+        }
+      }
+
+      function damageBlockAt(x, y) {
+        if (!inBounds(x, y)) return;
+        const cell = state.grid[y][x];
+        if (cell.castle !== -1) return;
+        if (cell.type === 'star') {
+          cell.type = 'normal';
+          cell.flash = 0.9;
+          spawnParticles(x, y, '#ffffff', 6, 2.0);
+        } else if (cell.type === 'normal') {
+          const col = state.players[cell.owner]?.color || '#cbd5e1';
+          cell.owner = -1;
+          cell.type = 'empty';
+          spawnParticles(x, y, col, 8, 2.2);
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 9. SPECIAL ABILITIES (SUPER MOC!)
+      // -----------------------------------------------------------------------
+      async function activateSpecialButton() {
+        const player = getCurrentPlayer();
+        if (!player || player.charge < 100 || state.busy) return;
+
+        if (player.specialType === 'laser') {
+          // 4-Bit Weapon fires immediately from hero's position!
+          await executeSpecial(player, player.x, player.y);
+          endHumanActionTurnIfDone();
+        } else {
+          // Targeting mode for Wizard, Rocket Jump, or Air Strike
+          state.actionSubMode = player.specialType;
+          SFX.click();
+          renderControlDock();
+        }
+      }
+
+      async function executeSpecial(player, tx, ty) {
+        state.busy = true;
+        player.charge = 0;
+        state.actionSubMode = 'move';
+        updateHUD();
+
+        SFX.special();
+        const bannerColors = [
+          'from-amber-600 via-yellow-500 to-amber-600',
+          'from-red-800 via-red-600 to-orange-600',
+          'from-blue-800 via-cyan-500 to-blue-800',
+          'from-emerald-800 via-green-600 to-emerald-800'
+        ];
+        await showCutIn(player.specialEng, `${player.name}: ${player.specialPl}!`, bannerColors[player.id], 1150);
+
+        if (player.specialType === 'wizard') {
+          // Yellow: Evil Dark Wizard blasts 3x3 with dark energy
+          state.wizardFx = { x: tx, y: ty, life: 1.0 };
+          spawnParticles(tx, ty, '#a855f7', 28, 3.8);
+          await wait(320);
+          explodeArea(tx, ty, 1, 2, player, true);
+          await wait(350);
+          state.wizardFx = null;
+        }
+        else if (player.specialType === 'rocket') {
+          // Red: Rocket Jump to (tx, ty) and explode 3x3 on landing
+          const sx = player.x;
+          const sy = player.y;
+          const dur = 480;
+          const start = performance.now();
+          SFX.cannonLaunch();
+          await new Promise(res => {
+            function anim(now) {
+              const t = Math.min(1, (now - start) / dur);
+              player.renderX = sx + (tx - sx) * t;
+              player.renderY = sy + (ty - sy) * t - Math.sin(t * Math.PI) * 2.6;
+              if (Math.random() < 0.6) spawnParticles(player.renderX, player.renderY + 0.3, '#f97316', 2, 1.0);
+              if (t < 1) requestAnimationFrame(anim);
+              else res();
+            }
+            requestAnimationFrame(anim);
+          });
+          player.x = tx;
+          player.y = ty;
+          player.renderX = tx;
+          player.renderY = ty;
+          explodeArea(tx, ty, 1, 2, player, true);
+          await checkCastleInteraction(player);
+        }
+        else if (player.specialType === 'laser') {
+          // Blue: 4-Bit Weapon — massive cross (+) beam across entire row & column!
+          SFX.laser();
+          triggerShake(12);
+          state.beams.push({ x: player.x, y: player.y, life: 1.0, color: '#38bdf8' });
+          for (let i = 0; i < GRID_SIZE; i++) {
+            const pts = [[i, player.y], [player.x, i]];
+            for (const [bx, by] of pts) {
+              if (bx === player.x && by === player.y) continue;
+              const cell = state.grid[by][bx];
+              if (cell.owner !== player.id) damageBlockAt(bx, by);
+              const h = getHeroAt(bx, by, player.id);
+              if (h) damageHero(h, 2, player);
+              const m = getMonsterAt(bx, by);
+              if (m && m.owner !== player.id) damageMonster(m, 2);
+              spawnParticles(bx, by, '#60a5fa', 4, 2.0);
+            }
+          }
+          await wait(550);
+        }
+        else if (player.specialType === 'airstrike') {
+          // Green: Air Strike — 4 precision missiles on 2x2 zone (tx..tx+1, ty..ty+1)
+          const bx = Math.min(GRID_SIZE - 2, tx);
+          const by = Math.min(GRID_SIZE - 2, ty);
+          const targets = [[bx, by], [bx + 1, by], [bx, by + 1], [bx + 1, by + 1]];
+          for (const [mx, my] of targets) {
+            state.projectiles.push({
+              kind: 'missile',
+              sx: mx + 1.5, sy: my - 4,
+              tx: mx, ty: my,
+              t: 0, speed: 3.2,
+              onHit: () => {
+                SFX.explosion();
+                triggerShake(8);
+                spawnParticles(mx, my, '#22c55e', 12, 2.8);
+                spawnParticles(mx, my, '#facc15', 10, 2.4);
+                damageBlockAt(mx, my);
+                damageBlockAt(mx, my); // Breaks even star blocks!
+                const h = getHeroAt(mx, my);
+                if (h && h.id !== player.id) damageHero(h, 2, player);
+                const m = getMonsterAt(mx, my);
+                if (m && m.owner !== player.id) damageMonster(m, 2);
+              }
+            });
+            SFX.cannonLaunch();
+            await wait(120);
+          }
+          await wait(450);
+        }
+
+        state.heroActed = true;
+        state.busy = false;
+        computeHeroReachable(player);
+        updateHUD();
+        renderControlDock();
+        checkVictory();
+      }
+
+      async function executeItemTarget(player, mode, tx, ty) {
+        state.busy = true;
+        state.actionSubMode = 'move';
+
+        if (mode === 'bomb') {
+          state.projectiles.push({
+            kind: 'bomb',
+            sx: player.x, sy: player.y,
+            tx, ty, t: 0, speed: 2.2,
+            onHit: () => explodeArea(tx, ty, 1, 1, player, true)
+          });
+          SFX.cannonLaunch();
+          await wait(520);
+        }
+        else if (mode === 'teleport') {
+          spawnParticles(player.x, player.y, '#c084fc', 16, 2.5);
+          player.x = tx;
+          player.y = ty;
+          player.renderX = tx;
+          player.renderY = ty;
+          SFX.pickup();
+          spawnParticles(tx, ty, '#38bdf8', 20, 2.8);
+          await checkCastleInteraction(player);
+        }
+        else if (mode === 'paint') {
+          const bx = Math.min(GRID_SIZE - 2, tx);
+          const by = Math.min(GRID_SIZE - 2, ty);
+          for (let dy = 0; dy <= 1; dy++) {
+            for (let dx = 0; dx <= 1; dx++) {
+              const px = bx + dx;
+              const py = by + dy;
+              if (state.grid[py][px].castle === -1) {
+                setBlock(px, py, player.id, 'normal');
+                state.grid[py][px].flash = 1.0;
+                spawnParticles(px, py, player.color, 6, 1.8);
+              }
+            }
+          }
+          SFX.drop();
+          const stars = checkStarCombos(player.id);
+          if (stars > 0) {
+            player.charge = Math.min(100, player.charge + stars * 25);
+            SFX.combo();
+            addFloatingText(bx, by, `COMBO! +${stars * 25}%`, '#fef08a', 14);
+          }
+        }
+        else if (mode === 'spring') {
+          const sx = player.x;
+          const sy = player.y;
+          const dur = 320;
+          const start = performance.now();
+          SFX.rotate();
+          await new Promise(res => {
+            function anim(now) {
+              const t = Math.min(1, (now - start) / dur);
+              player.renderX = sx + (tx - sx) * t;
+              player.renderY = sy + (ty - sy) * t - Math.sin(t * Math.PI) * 1.4;
+              if (t < 1) requestAnimationFrame(anim);
+              else res();
+            }
+            requestAnimationFrame(anim);
+          });
+          player.x = tx;
+          player.y = ty;
+          player.renderX = tx;
+          player.renderY = ty;
+          SFX.step();
+          await checkCastleInteraction(player);
+        }
+
+        state.busy = false;
+        computeHeroReachable(player);
+        updateHUD();
+        renderControlDock();
+        checkVictory();
+      }
+
+      function endHumanActionTurnIfDone() {
+        const player = getCurrentPlayer();
+        if (!player || !player.isHuman) return;
+        computeHeroReachable(player);
+        renderControlDock();
+      }
+
+      // -----------------------------------------------------------------------
+      // 10. AI LOGIC FOR HEROES & MONSTERS
+      // -----------------------------------------------------------------------
+      async function runMonsterAI(m) {
+        const enemies = state.players.filter(p => p.alive && !p.ko && p.id !== m.owner);
+        if (!enemies.length) return;
+        const target = enemies.reduce((a, b) =>
+          Math.hypot(a.x - m.x, a.y - m.y) < Math.hypot(b.x - m.x, b.y - m.y) ? a : b
+        );
+
+        for (let step = 0; step < 2; step++) {
+          // Check adjacent enemy hero to attack
+          if (Math.abs(target.x - m.x) + Math.abs(target.y - m.y) === 1) {
+            SFX.hit();
+            damageHero(target, 1, state.players[m.owner]);
+            await wait(240);
+            return;
+          }
+          // Move 1 step toward target
+          const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+          dirs.sort((a, b) =>
+            Math.hypot(m.x + a[0] - target.x, m.y + a[1] - target.y) -
+            Math.hypot(m.x + b[0] - target.x, m.y + b[1] - target.y)
+          );
+          for (const [dx, dy] of dirs) {
+            const nx = m.x + dx;
+            const ny = m.y + dy;
+            if (!inBounds(nx, ny) || getHeroAt(nx, ny) || getMonsterAt(nx, ny) || state.grid[ny][nx].castle !== -1) continue;
+            m.x = nx; m.y = ny;
+            m.renderX = nx; m.renderY = ny;
+            // Smash enemy block under monster
+            if (state.grid[ny][nx].owner !== -1 && state.grid[ny][nx].owner !== m.owner) {
+              damageBlockAt(nx, ny);
+            }
+            SFX.step();
+            await wait(160);
+            break;
+          }
+        }
+      }
+
+      async function runHeroAI(player) {
+        // 1. If Special Charge == 100%, consider using Special Ability!
+        if (player.charge >= 100) {
+          const enemies = state.players.filter(p => p.alive && !p.ko && p.id !== player.id);
+          if (enemies.length > 0) {
+            const victim = enemies[Math.floor(Math.random() * enemies.length)];
+            if (player.specialType === 'laser') {
+              if (enemies.some(e => e.x === player.x || e.y === player.y) || Math.random() < 0.6) {
+                await executeSpecial(player, player.x, player.y);
+                if (checkVictory()) return;
+              }
+            } else if (player.specialType === 'rocket') {
+              // Rocket jump toward enemy castle or own castle if carrying princess
+              const goal = player.carryingPrincessOf !== -1 ? player.castlePos : victim.castlePos;
+              if (!getHeroAt(goal.x, goal.y, player.id)) {
+                await executeSpecial(player, goal.x, goal.y);
+                if (checkVictory()) return;
+              }
+            } else {
+              await executeSpecial(player, victim.x, victim.y);
+              if (checkVictory()) return;
+            }
+          }
+        }
+
+        // 2. Compute reachable tiles & pick best goal
+        computeHeroReachable(player);
+        let goal = null;
+
+        if (player.carryingPrincessOf !== -1) {
+          goal = player.castlePos;
+        } else {
+          // Target nearest alive enemy castle with princess home
+          const validCastles = state.players
+            .filter(p => p.alive && p.id !== player.id && p.princessHome)
+            .map(p => p.castlePos);
+          if (validCastles.length > 0) {
+            goal = validCastles.reduce((a, b) =>
+              Math.hypot(a.x - player.x, a.y - player.y) < Math.hypot(b.x - player.x, b.y - player.y) ? a : b
+            );
+          }
+        }
+
+        if (goal && state.reachable.size > 0) {
+          let bestKey = null;
+          let bestScore = Infinity;
+
+          state.reachable.forEach((info, k) => {
+            const [rx, ry] = k.split(',').map(Number);
+            let dist = Math.hypot(rx - goal.x, ry - goal.y);
+            // Bonus for grabbing nearby items
+            if (getItemAt(rx, ry)) dist -= 2.2;
+            // Huge bonus for reaching exact goal
+            if (rx === goal.x && ry === goal.y) dist -= 50;
+            if (dist < bestScore) {
+              bestScore = dist;
+              bestKey = k;
+            }
+          });
+
+          if (bestKey) {
+            const path = state.reachable.get(bestKey).path;
+            await moveHeroAlongPath(player, path);
+            if (checkVictory()) return;
+          }
+        }
+
+        // 3. Attack adjacent enemy if any
+        computeHeroReachable(player);
+        if (state.attackTargets.length > 0) {
+          await performAttack(player, state.attackTargets[0]);
+        }
+      }
+
+      async function useItemByAI(player, type) {
+        const enemies = state.players.filter(p => p.alive && !p.ko && p.id !== player.id);
+        const enemy = enemies[0];
+        if (type === 'teleport') {
+          const dest = player.carryingPrincessOf !== -1
+            ? player.castlePos
+            : (enemy && enemy.princessHome ? enemy.castlePos : { x: 4, y: 4 });
+          if (!getHeroAt(dest.x, dest.y, player.id)) {
+            await executeItemTarget(player, 'teleport', dest.x, dest.y);
+          }
+        } else if (type === 'bomb' && enemy) {
+          await executeItemTarget(player, 'bomb', enemy.x, enemy.y);
+        } else if (type === 'paint') {
+          await executeItemTarget(player, 'paint', Math.min(8, player.x), Math.min(8, player.y));
+        } else if (type === 'spring' && enemy) {
+          const dx = Math.sign(enemy.castlePos.x - player.x) * Math.min(3, Math.abs(enemy.castlePos.x - player.x));
+          const dy = Math.sign(enemy.castlePos.y - player.y) * Math.min(3, Math.abs(enemy.castlePos.y - player.y));
+          const tx = Math.max(0, Math.min(GRID_SIZE - 1, player.x + dx));
+          const ty = Math.max(0, Math.min(GRID_SIZE - 1, player.y + dy));
+          if (!getHeroAt(tx, ty, player.id) && !getMonsterAt(tx, ty)) {
+            await executeItemTarget(player, 'spring', tx, ty);
+          }
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 11. PHASE 3: CANNON TIME ("FIRE YOUR CANNONS!")
+      // -----------------------------------------------------------------------
+      async function startCannonPhase() {
+        if (!state.running) return;
+        state.phase = 'CANNON';
+        state.busy = true;
+        state.allCannonQueue = [];
+        state.cannonTargets = [];
+        state.turnIdx = 0;
+        state.turnOrder = state.turnOrder.filter(id => state.players[id].alive);
+
+        updateHUD();
+        await showCutIn('CANNON TIME!', 'Wybierz 3 cele i odpal armaty!', 'from-rose-900 via-red-600 to-orange-700', 1050);
+
+        state.busy = false;
+        nextCannonTurn();
+      }
+
+      async function nextCannonTurn() {
+        if (!state.running) return;
+        if (state.turnIdx >= state.turnOrder.length) {
+          await fireAllCannonsSimultaneously();
+          return;
+        }
+
+        const player = getCurrentPlayer();
+        if (!player || !player.alive) {
+          state.turnIdx++;
+          nextCannonTurn();
+          return;
+        }
+
+        updateHUD();
+
+        if (player.isHuman) {
+          if (state.mode === 'local') {
+            await showHandoffModal(player, 'Faza Armat — wskaż 3 cele na planszy!');
+          }
+          state.cannonTargets = [];
+          renderControlDock();
+        } else {
+          // AI picks 3 smart cannon targets immediately
+          const picks = computeAICannonTargets(player);
+          picks.forEach(pt => state.allCannonQueue.push({ fromPlayer: player.id, tx: pt.x, ty: pt.y }));
+          state.turnIdx++;
+          nextCannonTurn();
+        }
+      }
+
+      function computeAICannonTargets(player) {
+        const targets = [];
+        const enemies = state.players.filter(p => p.alive && !p.ko && p.id !== player.id);
+
+        // Priority 1: Enemy carrying a princess!
+        const thief = enemies.find(e => e.carryingPrincessOf !== -1);
+        if (thief) targets.push({ x: thief.x, y: thief.y });
+
+        // Priority 2: Enemy heroes
+        enemies.forEach(e => {
+          if (targets.length < 3 && Math.random() < 0.75) targets.push({ x: e.x, y: e.y });
+        });
+
+        // Priority 3: Enemy Star Blocks or blocks near AI's castle
+        const enemyBlocks = [];
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const c = state.grid[y][x];
+            if (c.owner !== -1 && c.owner !== player.id && c.castle === -1) {
+              const score = (c.type === 'star' ? 12 : 4) - Math.hypot(x - player.castlePos.x, y - player.castlePos.y) * 0.6 + Math.random() * 5;
+              enemyBlocks.push({ x, y, score });
+            }
+          }
+        }
+        enemyBlocks.sort((a, b) => b.score - a.score);
+        for (const b of enemyBlocks) {
+          if (targets.length >= 3) break;
+          targets.push({ x: b.x, y: b.y });
+        }
+
+        while (targets.length < 3) {
+          targets.push({ x: 1 + Math.floor(Math.random() * 8), y: 1 + Math.floor(Math.random() * 8) });
+        }
+        return targets.slice(0, 3);
+      }
+
+      async function fireAllCannonsSimultaneously() {
+        state.busy = true;
+        state.cannonTargets = [];
+        renderControlDock();
+
+        // Fire in 3 synchronized volleys (1st shot of each castle, 2nd shot, 3rd shot)
+        for (let volley = 0; volley < 3; volley++) {
+          const shots = [];
+          state.players.forEach(p => {
+            if (!p.alive) return;
+            const pShots = state.allCannonQueue.filter(s => s.fromPlayer === p.id);
+            if (pShots[volley]) shots.push(pShots[volley]);
+          });
+
+          if (shots.length > 0) {
+            SFX.cannonLaunch();
+            shots.forEach(s => {
+              const origin = state.players[s.fromPlayer].castlePos;
+              state.projectiles.push({
+                kind: 'cannon',
+                sx: origin.x,
+                sy: origin.y,
+                tx: s.tx,
+                ty: s.ty,
+                t: 0,
+                speed: 1.65,
+                onHit: () => {
+                  SFX.explosion();
+                  triggerShake(6);
+                  spawnParticles(s.tx, s.ty, '#f97316', 12, 2.5);
+                  spawnParticles(s.tx, s.ty, '#475569', 8, 1.8);
+                  damageBlockAt(s.tx, s.ty);
+                  const h = getHeroAt(s.tx, s.ty);
+                  if (h) damageHero(h, 1, state.players[s.fromPlayer]);
+                  const m = getMonsterAt(s.tx, s.ty);
+                  if (m) damageMonster(m, 1);
+                }
+              });
+            });
+            await wait(440);
+          }
+        }
+
+        // Wait for last cannonballs to land
+        await wait(650);
+
+        // End of Round cleanup: Respawn KO'd alive heroes at their home castles!
+        state.players.forEach(p => {
+          if (p.alive && p.ko) {
+            p.ko = false;
+            p.hp = p.maxHp;
+            p.x = p.castlePos.x;
+            p.y = p.castlePos.y;
+            p.renderX = p.castlePos.x;
+            p.renderY = p.castlePos.y;
+            spawnParticles(p.x, p.y, p.light, 14, 2.2);
+          }
+        });
+
+        // Spawn 1–2 fresh items on the grid
+        spawnRandomItems(1 + (Math.random() < 0.45 ? 1 : 0));
+
+        state.round++;
+        state.busy = false;
+        updateHUD();
+
+        if (!checkVictory()) {
+          startBlockPhase();
+        }
+      }
+
+      // -----------------------------------------------------------------------
+      // 12. VICTORY CHECK
+      // -----------------------------------------------------------------------
+      function checkVictory() {
+        const alive = getAlivePlayers();
+        if (alive.length <= 1 && state.running) {
+          state.running = false;
+          state.phase = 'GAMEOVER';
+          const champ = alive[0] || state.players[0];
+          SFX.win();
+          document.getElementById('winner-name').textContent = `${champ.emoji} ${champ.name} wygrywa!`;
+          document.getElementById('winner-name').style.color = champ.color;
+          document.getElementById('winner-stats').textContent =
+            `Zwycięstwo w rundzie ${state.round} • Uratowane Księżniczki: ${champ.rescues} • Pokonani rywale: ${champ.kills}`;
+          gameoverModal.classList.remove('hidden');
+          return true;
+        }
+        return false;
+      }
+
+      // -----------------------------------------------------------------------
+      // 13. HUD & CONTROL DOCK RENDERING
+      // -----------------------------------------------------------------------
+      function updateHUD() {
+        roundLabel.textContent = `RUNDA ${state.round}`;
+        const phaseMap = {
+          BLOCK: 'KLOCKI',
+          ACTION: 'AKCJA',
+          CANNON: 'ARMATY',
+          GAMEOVER: 'KONIEC'
+        };
+        phaseMini.textContent = phaseMap[state.phase] || 'MENU';
+
+        const activeP = getCurrentPlayer();
+        if (activeP && state.running && state.phase !== 'GAMEOVER') {
+          turnPill.classList.remove('hidden');
+          turnPill.textContent = `Tura: ${activeP.name}${activeP.isHuman ? '' : ' (AI)'}`;
+          turnPill.style.borderColor = activeP.color;
+        } else {
+          turnPill.classList.add('hidden');
+        }
+
+        state.players.forEach((p, i) => {
+          const el = hudEls[i];
+          const isTurn = activeP && activeP.id === p.id && state.running;
+          el.classList.toggle('active-turn', isTurn);
+          el.classList.toggle('eliminated', !p.alive);
+
+          const hearts = p.alive
+            ? (p.ko ? '<span class="text-[10px] text-rose-400 font-bold">K.O.</span>' : '❤️'.repeat(p.hp) + '🖤'.repeat(p.maxHp - p.hp))
+            : '<span class="text-xs">💀</span>';
+
+          const princessBadge = p.alive
+            ? (p.carryingPrincessOf !== -1
+                ? `<span class="text-[11px] animate-bounce" title="Niesie Księżniczkę!">👑</span>`
+                : (p.princessHome ? `<span class="text-[10px] opacity-80" title="Księżniczka w zamku">🏰</span>` : `<span class="text-[10px] text-rose-400" title="Porwana!">⚠️</span>`))
+            : '';
+
+          const fullBar = p.charge >= 100;
+          el.innerHTML = `
+            <div class="w-8 h-8 rounded-lg border-2 border-slate-950 flex items-center justify-center text-base shrink-0 shadow" style="background:${p.color}">
+              ${p.alive ? p.emoji : '💀'}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center justify-between gap-1 ${i % 2 === 1 ? 'flex-row-reverse' : ''}">
+                <span class="text-[11px] font-bold truncate" style="color:${p.light}">${p.name}</span>
+                <span class="flex items-center gap-0.5 text-[10px]">${princessBadge}${hearts}</span>
+              </div>
+              <div class="w-full h-2.5 bg-slate-950 rounded-full overflow-hidden border border-slate-700 mt-0.5 relative">
+                <div class="h-full transition-all duration-300 ${fullBar ? 'animate-pulse' : ''}" style="width:${p.charge}%; background:${fullBar ? 'linear-gradient(90deg,#fde047,#ffffff,#facc15)' : p.color};"></div>
+              </div>
+            </div>
+          `;
+        });
+      }
+
+      function renderControlDock() {
+        dockButtons.innerHTML = '';
+        const player = getCurrentPlayer();
+
+        if (!state.running || state.busy || !player || !player.isHuman) {
+          actionHint.textContent = player && !player.isHuman
+            ? `Ruch AI: ${player.name}...`
+            : 'Trwa akcja na arenie...';
+          dockButtons.innerHTML = `<div class="text-xs text-slate-400 font-bold py-2 animate-pulse">⏳ Czekaj na zakończenie akcji...</div>`;
+          return;
+        }
+
+        // PHASE 1: BLOCK TIME CONTROLS
+        if (state.phase === 'BLOCK') {
+          const valid = state.currentPiece && state.currentPiece.valid;
+          const anySpot = state.currentPiece && findFirstValidPlacement(state.currentPiece.cells, player.id);
+
+          actionHint.textContent = valid
+            ? 'Dotknij planszy lub przeciągnij klocek — ułóż 2×2 na STAR COMBO!'
+            : 'Czerwone pole jest zajęte — przesuń lub obróć klocek!';
+
+          const btnRot = makeBtn('🔄 OBRÓĆ', 'btn-blue flex-1 py-2.5 text-sm', () => rotateCurrentPiece());
+          const btnDrop = makeBtn('✅ POSTAW', 'btn-green flex-1 py-2.5 text-sm', () => {
+            if (placeCurrentPiece(player)) {
+              state.currentPiece = null;
+              state.turnIdx++;
+              nextBlockTurn();
+            }
+          });
+          btnDrop.disabled = !valid;
+
+          dockButtons.append(btnRot, btnDrop);
+          if (!anySpot) {
+            const btnSkip = makeBtn('POMIŃ', 'btn-slate px-3 py-2.5 text-xs', () => {
+              state.currentPiece = null;
+              state.turnIdx++;
+              nextBlockTurn();
+            });
+            dockButtons.append(btnSkip);
+          }
+        }
+
+        // PHASE 2: ACTION TIME CONTROLS
+        else if (state.phase === 'ACTION') {
+          if (state.actionSubMode !== 'move') {
+            const modeHints = {
+              bomb: '💣 Wskaż dowolne pole — rzucisz bombę (3×3)!',
+              teleport: '🌀 Wskaż dowolne wolne pole (nawet swój zamek!), by się teleportować!',
+              paint: '🖌️ Wskaż pole — pomalujesz obszar 2×2 swoim kolorem!',
+              spring: '🦘 Wskaż pole do 3 kratek stąd, by tam przeskoczyć!',
+              wizard: '🧙 EVIL DARK WIZARD! Wskaż środek wybuchu 3×3!',
+              rocket: '🚀 ROCKET JUMP! Wskaż pole lądowania i wybuchu 3×3!',
+              airstrike: '✈️ AIR STRIKE! Wskaż strefę 2×2 do zbombardowania!'
+            };
+            actionHint.textContent = modeHints[state.actionSubMode] || 'Wskaż cel na planszy!';
+            const btnCancel = makeBtn('✕ ANULUJ CEL', 'btn-slate flex-1 py-2.5 text-sm', () => {
+              state.actionSubMode = 'move';
+              renderControlDock();
+            });
+            dockButtons.append(btnCancel);
+            return;
+          }
+
+          actionHint.textContent = player.carryingPrincessOf !== -1
+            ? '👑 Wracaj z Księżniczką do WŁASNEGO zamku!'
+            : (!state.heroMoved
+                ? 'Dotknij podświetlonego pola, by się ruszyć, lub zaatakuj wroga!'
+                : (state.attackTargets.length > 0 ? 'Możesz jeszcze zaatakować sąsiedniego wroga lub zakończyć turę!' : 'Ruch wykonany — użyj Supermocy lub zakończ turę!'));
+
+          const btnSuper = makeBtn(
+            player.charge >= 100 ? `⚡ SUPER MOC!` : `⚡ MOC ${player.charge}%`,
+            `btn-purple flex-1 py-2.5 text-sm ${player.charge >= 100 ? 'super-ready' : ''}`,
+            () => activateSpecialButton()
+          );
+          btnSuper.disabled = player.charge < 100;
+
+          const btnEnd = makeBtn('KONIEC TURY ⏭', 'btn-yellow flex-1 py-2.5 text-sm', () => {
+            SFX.click();
+            state.turnIdx++;
+            nextActionTurn();
+          });
+
+          dockButtons.append(btnSuper, btnEnd);
+        }
+
+        // PHASE 3: CANNON TIME CONTROLS
+        else if (state.phase === 'CANNON') {
+          const left = 3 - state.cannonTargets.length;
+          actionHint.textContent = left > 0
+            ? `🎯 Wskaż jeszcze ${left} ${left === 1 ? 'cel' : 'cele'} armatnie na planszy!`
+            : '💥 Wszystkie 3 cele wybrane — kliknij OGNIA!';
+
+          const btnClear = makeBtn('🧹 WYCZYŚĆ', 'btn-slate px-4 py-2.5 text-xs', () => {
+            SFX.click();
+            state.cannonTargets = [];
+            renderControlDock();
+          });
+          btnClear.disabled = state.cannonTargets.length === 0;
+
+          const btnFire = makeBtn(
+            `🔥 OGNIA! (${state.cannonTargets.length}/3)`,
+            `btn-red flex-1 py-2.5 text-sm ${state.cannonTargets.length === 3 ? 'super-ready' : ''}`,
+            () => {
+              if (state.cannonTargets.length === 3) {
+                state.cannonTargets.forEach(t => state.allCannonQueue.push({ fromPlayer: player.id, tx: t.x, ty: t.y }));
+                state.cannonTargets = [];
+                state.turnIdx++;
+                nextCannonTurn();
+              }
+            }
+          );
+          btnFire.disabled = state.cannonTargets.length < 3;
+
+          dockButtons.append(btnClear, btnFire);
+        }
+      }
+
+      function makeBtn(label, cls, onClick) {
+        const b = document.createElement('button');
+        b.className = `arcade-btn ${cls}`;
+        b.textContent = label;
+        b.addEventListener('click', onClick);
+        return b;
+      }
+
+      function showHandoffModal(player, phaseDesc) {
+        return new Promise(resolve => {
+          const badge = document.getElementById('handoff-badge');
+          badge.style.background = player.color;
+          badge.textContent = player.emoji;
+          document.getElementById('handoff-name').textContent = `Tura: ${player.name}`;
+          document.getElementById('handoff-phase').textContent = phaseDesc;
+          handoffModal.classList.remove('hidden');
+
+          const goBtn = document.getElementById('btn-handoff-go');
+          const handler = () => {
+            goBtn.removeEventListener('click', handler);
+            handoffModal.classList.add('hidden');
+            SFX.click();
+            resolve();
+          };
+          goBtn.addEventListener('click', handler);
+        });
+      }
+
+      // -----------------------------------------------------------------------
+      // 14. CANVAS TOUCH / POINTER INTERACTION
+      // -----------------------------------------------------------------------
+      function getGridCoordFromPointer(e) {
+        const rect = canvas.getBoundingClientRect();
+        const px = e.clientX - rect.left;
+        const py = e.clientY - rect.top;
+        const gx = Math.floor((px - boardMetrics.gridOrigin) / boardMetrics.cellSize);
+        const gy = Math.floor((py - boardMetrics.gridOrigin) / boardMetrics.cellSize);
+        if (!inBounds(gx, gy)) return null;
+        return { x: gx, y: gy };
+      }
+
+      canvas.addEventListener('pointerdown', async (e) => {
+        if (!state.running || state.busy) return;
+        const player = getCurrentPlayer();
+        if (!player || !player.isHuman) return;
+
+        const pt = getGridCoordFromPointer(e);
+        if (!pt) return;
+
+        // BLOCK PHASE: position ghost piece (and allow dragging)
+        if (state.phase === 'BLOCK' && state.currentPiece) {
+          state.isDraggingPiece = true;
+          moveGhostPieceTo(pt.x, pt.y);
+          SFX.click();
+        }
+
+        // ACTION PHASE
+        else if (state.phase === 'ACTION') {
+          const mode = state.actionSubMode;
+
+          // Submode targeting (items or specials)
+          if (mode !== 'move') {
+            if (mode === 'teleport') {
+              if (getHeroAt(pt.x, pt.y, player.id) || getMonsterAt(pt.x, pt.y)) {
+                addFloatingText(pt.x, pt.y, 'ZAJĘTE!', '#f87171', 11);
+                return;
+              }
+              await executeItemTarget(player, 'teleport', pt.x, pt.y);
+            } else if (mode === 'spring') {
+              const dist = Math.abs(pt.x - player.x) + Math.abs(pt.y - player.y);
+              if (dist === 0 || dist > 3 || getHeroAt(pt.x, pt.y, player.id) || getMonsterAt(pt.x, pt.y)) {
+                addFloatingText(pt.x, pt.y, 'MAKS. 3 POLA!', '#f87171', 11);
+                return;
+              }
+              await executeItemTarget(player, 'spring', pt.x, pt.y);
+            } else if (mode === 'bomb' || mode === 'paint') {
+              await executeItemTarget(player, mode, pt.x, pt.y);
+            } else if (mode === 'rocket') {
+              if (getHeroAt(pt.x, pt.y, player.id)) {
+                addFloatingText(pt.x, pt.y, 'ZAJĘTE!', '#f87171', 11);
+                return;
+              }
+              await executeSpecial(player, pt.x, pt.y);
+            } else if (mode === 'wizard' || mode === 'airstrike') {
+              await executeSpecial(player, pt.x, pt.y);
+            }
+            return;
+          }
+
+          // Standard Move / Attack
+          const atk = state.attackTargets.find(t => t.x === pt.x && t.y === pt.y);
+          if (atk && !state.heroActed) {
+            await performAttack(player, atk);
+            endHumanActionTurnIfDone();
+            return;
+          }
+
+          const reach = state.reachable.get(keyOf(pt.x, pt.y));
+          if (reach && !state.heroMoved) {
+            const res = await moveHeroAlongPath(player, reach.path);
+            if (res === 'moved') {
+              endHumanActionTurnIfDone();
+            }
+          }
+        }
+
+        // CANNON PHASE: toggle/add up to 3 targets
+        else if (state.phase === 'CANNON') {
+          const existingIdx = state.cannonTargets.findIndex(t => t.x === pt.x && t.y === pt.y);
+          if (existingIdx !== -1) {
+            state.cannonTargets.splice(existingIdx, 1);
+            SFX.click();
+          } else if (state.cannonTargets.length < 3) {
+            state.cannonTargets.push({ x: pt.x, y: pt.y });
+            SFX.rotate();
+          } else {
+            // Replace oldest target so tapping feels responsive
+            state.cannonTargets.shift();
+            state.cannonTargets.push({ x: pt.x, y: pt.y });
+            SFX.rotate();
+          }
+          renderControlDock();
+        }
+      });
+
+      canvas.addEventListener('pointermove', (e) => {
+        if (!state.isDraggingPiece || state.phase !== 'BLOCK' || !state.currentPiece) return;
+        const pt = getGridCoordFromPointer(e);
+        if (pt && (pt.x !== state.currentPiece.x || pt.y !== state.currentPiece.y)) {
+          moveGhostPieceTo(pt.x, pt.y);
+        }
+      });
+
+      window.addEventListener('pointerup', () => {
+        state.isDraggingPiece = false;
+      });
+
+      function moveGhostPieceTo(gx, gy) {
+        let x = gx;
+        let y = gy;
+        for (const [dx, dy] of state.currentPiece.cells) {
+          if (x + dx < 0) x += -(x + dx);
+          if (x + dx >= GRID_SIZE) x -= (x + dx - (GRID_SIZE - 1));
+          if (y + dy < 0) y += -(y + dy);
+          if (y + dy >= GRID_SIZE) y -= (y + dy - (GRID_SIZE - 1));
+        }
+        state.currentPiece.x = x;
+        state.currentPiece.y = y;
+        state.currentPiece.valid = isValidPiecePlacement(state.currentPiece.cells, x, y);
+        renderControlDock();
+      }
+
+      // -----------------------------------------------------------------------
+      // 15. RESPONSIVE CANVAS RESIZING
+      // -----------------------------------------------------------------------
+      function resizeCanvas() {
+        const rect = canvasWrap.getBoundingClientRect();
+        const size = Math.floor(Math.min(rect.width - 4, rect.height - 4));
+        if (size <= 40) return;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.style.width = `${size}px`;
+        canvas.style.height = `${size}px`;
+        canvas.width = Math.floor(size * dpr);
+        canvas.height = Math.floor(size * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+        const border = Math.max(10, Math.floor(size * 0.04));
+        boardMetrics = {
+          size,
+          border,
+          gridOrigin: border,
+          cellSize: (size - border * 2) / GRID_SIZE
+        };
+      }
+
+      window.addEventListener('resize', resizeCanvas);
+
+      // -----------------------------------------------------------------------
+      // 16. 60FPS PIXEL-ART CANVAS RENDERER
+      // -----------------------------------------------------------------------
+      let lastTime = performance.now();
+
+      function gameLoop(now) {
+        const dt = Math.min(0.05, (now - lastTime) / 1000);
+        lastTime = now;
+        state.time += dt;
+
+        updateFX(dt);
+        drawBoard();
+
+        requestAnimationFrame(gameLoop);
+      }
+
+      function updateFX(dt) {
+        if (state.shake > 0) state.shake = Math.max(0, state.shake - dt * 28);
+
+        // Cell flashes
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            if (state.grid[y] && state.grid[y][x].flash > 0) {
+              state.grid[y][x].flash = Math.max(0, state.grid[y][x].flash - dt * 2.5);
+            }
+          }
+        }
+
+        // Projectiles (Cannonballs, Bombs, Missiles)
+        for (let i = state.projectiles.length - 1; i >= 0; i--) {
+          const p = state.projectiles[i];
+          p.t += dt * p.speed;
+          if (p.t >= 1) {
+            if (p.onHit) p.onHit();
+            state.projectiles.splice(i, 1);
+          }
+        }
+
+        // Particles
+        for (let i = state.particles.length - 1; i >= 0; i--) {
+          const pt = state.particles[i];
+          pt.x += pt.vx * dt;
+          pt.y += pt.vy * dt;
+          pt.vx *= 0.94;
+          pt.vy *= 0.94;
+          pt.life -= dt;
+          if (pt.life <= 0) state.particles.splice(i, 1);
+        }
+
+        // Floating text
+        for (let i = state.floatingTexts.length - 1; i >= 0; i--) {
+          const ft = state.floatingTexts[i];
+          ft.y += ft.vy * dt;
+          ft.life -= dt * 0.9;
+          if (ft.life <= 0) state.floatingTexts.splice(i, 1);
+        }
+
+        // 4-Bit Laser Beams
+        for (let i = state.beams.length - 1; i >= 0; i--) {
+          state.beams[i].life -= dt * 2.0;
+          if (state.beams[i].life <= 0) state.beams.splice(i, 1);
+        }
+      }
+
+      function drawBoard() {
+        const { size, border, gridOrigin, cellSize } = boardMetrics;
+        ctx.save();
+
+        // Screen shake
+        if (state.shake > 0.2) {
+          ctx.translate((Math.random() - 0.5) * state.shake, (Math.random() - 0.5) * state.shake);
+        }
+
+        // 1. Yellow-and-black diagonal hazard stripe border (Signature Reset Generation frame!)
+        drawHazardBorder(size, border);
+
+        // 2. 10x10 Vibrant Green Grass Grid
+        for (let y = 0; y < GRID_SIZE; y++) {
+          for (let x = 0; x < GRID_SIZE; x++) {
+            const px = gridOrigin + x * cellSize;
+            const py = gridOrigin + y * cellSize;
+
+            ctx.fillStyle = (x + y) % 2 === 0 ? '#4ade80' : '#38c96b';
+            ctx.fillRect(px, py, cellSize + 0.5, cellSize + 0.5);
+
+            // Subtle pixel grass tuft
+            if ((x * 7 + y * 13) % 5 === 0) {
+              ctx.fillStyle = 'rgba(22, 101, 52, 0.22)';
+              ctx.fillRect(px + cellSize * 0.25, py + cellSize * 0.65, 2, 4);
+              ctx.fillRect(px + cellSize * 0.35, py + cellSize * 0.60, 2, 5);
+            }
+
+            // Crisp grid line
+            ctx.strokeStyle = 'rgba(20, 83, 45, 0.35)';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(px + 0.5, py + 0.5, cellSize - 1, cellSize - 1);
+          }
+        }
+
+        // 3. Placed Colored Blocks & Star Blocks
+        if (state.grid.length === GRID_SIZE) {
+          for (let y = 0; y < GRID_SIZE; y++) {
+            for (let x = 0; x < GRID_SIZE; x++) {
+              const cell = state.grid[y][x];
+              if (cell.type === 'normal' || cell.type === 'star') {
+                drawBlockTile(x, y, cell);
+              }
+            }
+          }
+        }
+
+        // 4. Castles in the 4 inner corners
+        state.players.forEach(p => drawCastle(p));
+
+        // 5. Phase Overlays (Reachable tiles, Attack targets, Special targeting, Ghost piece, Cannon crosshairs)
+        drawPhaseHighlights();
+
+        // 6. Items on the grid
+        state.items.forEach(it => drawItem(it));
+
+        // 7. Summoned Monsters
+        state.monsters.forEach(m => drawMonster(m));
+
+        // 8. Heroes (and carried Princesses!)
+        state.players.forEach(p => {
+          if (p.alive && !p.ko) drawHero(p);
+        });
+
+        // 9. Ghost Tetromino in Block Phase (drawn on top for crisp visibility)
+        if (state.phase === 'BLOCK' && state.currentPiece) {
+          drawGhostTetromino();
+        }
+
+        // 10. 4-Bit Laser Beams & Wizard FX
+        state.beams.forEach(b => drawLaserBeam(b));
+        if (state.wizardFx) drawWizardFX(state.wizardFx);
+
+        // 11. Arcing Projectiles (Cannonballs, Bombs, Missiles)
+        state.projectiles.forEach(p => drawProjectile(p));
+
+        // 12. Particles & Floating Arcade Text
+        drawParticles();
+        drawFloatingTexts();
+
+        ctx.restore();
+      }
+
+      function drawHazardBorder(size, border) {
+        ctx.save();
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(0, 0, size, size);
+
+        // Diagonal black stripes
+        ctx.beginPath();
+        ctx.rect(0, 0, size, size);
+        ctx.clip();
+        ctx.strokeStyle = '#111827';
+        ctx.lineWidth = border * 0.72;
+        const step = border * 1.55;
+        for (let i = -size; i < size * 2; i += step) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i + size, size);
+          ctx.stroke();
+        }
+        // Inner crisp border
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 2.5;
+        ctx.strokeRect(border - 1, border - 1, size - border * 2 + 2, size - border * 2 + 2);
+        ctx.restore();
+      }
+
+      function drawBlockTile(x, y, cell) {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const px = gridOrigin + x * cellSize;
+        const py = gridOrigin + y * cellSize;
+        const p = state.players[cell.owner];
+        if (!p) return;
+
+        const pad = 1.5;
+        const w = cellSize - pad * 2;
+
+        // Main beveled block body
+        ctx.fillStyle = p.color;
+        ctx.fillRect(px + pad, py + pad, w, w);
+
+        // Top & left bright highlight
+        ctx.fillStyle = p.light;
+        ctx.fillRect(px + pad, py + pad, w, 3);
+        ctx.fillRect(px + pad, py + pad, 3, w);
+
+        // Bottom & right dark bevel
+        ctx.fillStyle = p.dark;
+        ctx.fillRect(px + pad, py + pad + w - 3, w, 3);
+        ctx.fillRect(px + pad + w - 3, py + pad, 3, w);
+
+        // Pixel outline
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1.2;
+        ctx.strokeRect(px + pad, py + pad, w, w);
+
+        // STAR BLOCK (Combo!)
+        if (cell.type === 'star') {
+          const pulse = 0.85 + Math.sin(state.time * 6 + x + y) * 0.15;
+          drawStarShape(px + cellSize / 2, py + cellSize / 2, 5, cellSize * 0.3 * pulse, cellSize * 0.14 * pulse, '#ffffff', p.dark);
+        }
+
+        // Flash overlay
+        if (cell.flash > 0) {
+          ctx.fillStyle = `rgba(255,255,255,${Math.min(0.85, cell.flash)})`;
+          ctx.fillRect(px + pad, py + pad, w, w);
+        }
+      }
+
+      function drawStarShape(cx, cy, spikes, outerR, innerR, fill, stroke) {
+        let rot = (Math.PI / 2) * 3;
+        const step = Math.PI / spikes;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - outerR);
+        for (let i = 0; i < spikes; i++) {
+          ctx.lineTo(cx + Math.cos(rot) * outerR, cy + Math.sin(rot) * outerR);
+          rot += step;
+          ctx.lineTo(cx + Math.cos(rot) * innerR, cy + Math.sin(rot) * innerR);
+          rot += step;
+        }
+        ctx.closePath();
+        ctx.fillStyle = fill;
+        ctx.fill();
+        if (stroke) {
+          ctx.strokeStyle = stroke;
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+
+      function drawCastle(p) {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const px = gridOrigin + p.castlePos.x * cellSize;
+        const py = gridOrigin + p.castlePos.y * cellSize;
+        const s = cellSize;
+
+        ctx.save();
+        if (!p.alive) ctx.globalAlpha = 0.45;
+
+        // Castle base platform
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(px + 1, py + 1, s - 2, s - 2);
+
+        if (p.id === 0) {
+          // YELLOW: Wooden Tower Castle
+          ctx.fillStyle = '#92400e';
+          ctx.fillRect(px + s * 0.14, py + s * 0.28, s * 0.72, s * 0.64);
+          ctx.fillStyle = '#b45309';
+          ctx.fillRect(px + s * 0.1, py + s * 0.16, s * 0.8, s * 0.2);
+          // Crenellations
+          ctx.fillStyle = '#facc15';
+          ctx.fillRect(px + s * 0.12, py + s * 0.1, s * 0.18, s * 0.12);
+          ctx.fillRect(px + s * 0.41, py + s * 0.1, s * 0.18, s * 0.12);
+          ctx.fillRect(px + s * 0.70, py + s * 0.1, s * 0.18, s * 0.12);
+          // Arched door
+          ctx.fillStyle = '#451a03';
+          ctx.fillRect(px + s * 0.36, py + s * 0.56, s * 0.28, s * 0.36);
+        } else if (p.id === 1) {
+          // RED: Steel Mech Fortress
+          ctx.fillStyle = '#475569';
+          ctx.fillRect(px + s * 0.12, py + s * 0.2, s * 0.76, s * 0.72);
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillRect(px + s * 0.18, py + s * 0.24, s * 0.64, s * 0.14);
+          // Glowing red visor slit
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(px + s * 0.24, py + s * 0.44, s * 0.52, s * 0.14);
+          ctx.fillStyle = '#fef08a';
+          ctx.fillRect(px + s * 0.32, py + s * 0.48, s * 0.12, s * 0.06);
+          // Antenna
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(px + s * 0.46, py + s * 0.06, s * 0.08, s * 0.16);
+        } else if (p.id === 2) {
+          // BLUE: Blue Dome Fortress
+          ctx.fillStyle = '#1d4ed8';
+          ctx.beginPath();
+          ctx.arc(px + s * 0.5, py + s * 0.58, s * 0.38, Math.PI, 0);
+          ctx.fill();
+          ctx.fillStyle = '#3b82f6';
+          ctx.fillRect(px + s * 0.12, py + s * 0.55, s * 0.76, s * 0.36);
+          // Glowing cyan windows
+          ctx.fillStyle = '#67e8f9';
+          ctx.fillRect(px + s * 0.26, py + s * 0.62, s * 0.14, s * 0.14);
+          ctx.fillRect(px + s * 0.60, py + s * 0.62, s * 0.14, s * 0.14);
+          ctx.fillStyle = '#93c5fd';
+          ctx.fillRect(px + s * 0.46, py + s * 0.08, s * 0.08, s * 0.15);
+        } else {
+          // GREEN: Military Bunker
+          ctx.fillStyle = '#3f6212';
+          ctx.fillRect(px + s * 0.1, py + s * 0.34, s * 0.8, s * 0.56);
+          ctx.fillStyle = '#22c55e';
+          ctx.fillRect(px + s * 0.16, py + s * 0.22, s * 0.68, s * 0.16);
+          // Bunker slit
+          ctx.fillStyle = '#052e16';
+          ctx.fillRect(px + s * 0.22, py + s * 0.48, s * 0.56, s * 0.14);
+          // Radar dish
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillRect(px + s * 0.64, py + s * 0.1, s * 0.16, s * 0.12);
+        }
+
+        // Crisp colored corner border
+        ctx.strokeStyle = p.color;
+        ctx.lineWidth = 2;
+        ctx.strokeRect(px + 2, py + 2, s - 4, s - 4);
+
+        // Draw Princess peeking from castle if home & player alive!
+        if (p.alive && p.princessHome) {
+          const bob = Math.sin(state.time * 4.5 + p.id) * 1.5;
+          drawMiniPrincess(px + s * 0.76, py + s * 0.24 + bob, p.color, s * 0.22);
+        }
+
+        // Eliminated X mark
+        if (!p.alive) {
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(px + 5, py + 5);
+          ctx.lineTo(px + s - 5, py + s - 5);
+          ctx.moveTo(px + s - 5, py + 5);
+          ctx.lineTo(px + 5, py + s - 5);
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+
+      function drawMiniPrincess(cx, cy, dressColor, r) {
+        // Dress triangle
+        ctx.fillStyle = dressColor;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - r * 0.2);
+        ctx.lineTo(cx - r * 0.9, cy + r * 1.1);
+        ctx.lineTo(cx + r * 0.9, cy + r * 1.1);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#0f172a';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Head
+        ctx.fillStyle = '#fde68a';
+        ctx.beginPath();
+        ctx.arc(cx, cy - r * 0.45, r * 0.58, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.stroke();
+
+        // Tiny golden crown
+        ctx.fillStyle = '#facc15';
+        ctx.fillRect(cx - r * 0.45, cy - r * 1.25, r * 0.9, r * 0.4);
+      }
+
+      function drawHero(p) {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const bob = Math.sin(state.time * 6 + p.id * 1.7) * 1.8;
+        const cx = gridOrigin + (p.renderX + 0.5) * cellSize;
+        const cy = gridOrigin + (p.renderY + 0.52) * cellSize + bob;
+        const s = cellSize;
+
+        // Shadow on tile
+        ctx.fillStyle = 'rgba(0,0,0,0.32)';
+        ctx.beginPath();
+        ctx.ellipse(cx, gridOrigin + (p.renderY + 0.84) * cellSize, s * 0.3, s * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Active player pulsing ring
+        const cur = getCurrentPlayer();
+        if (cur && cur.id === p.id && state.phase === 'ACTION') {
+          ctx.strokeStyle = '#fef08a';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.arc(cx, gridOrigin + (p.renderY + 0.5) * cellSize, s * (0.42 + Math.sin(state.time * 8) * 0.04), 0, Math.PI * 2);
+          ctx.stroke();
+        }
+
+        ctx.save();
+        if (p.id === 0) {
+          // CARD GIRL (Yellow): dress + cute head + iconic big yellow bow
+          ctx.fillStyle = '#facc15';
+          ctx.fillRect(cx - s * 0.22, cy - s * 0.02, s * 0.44, s * 0.34);
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.4;
+          ctx.strokeRect(cx - s * 0.22, cy - s * 0.02, s * 0.44, s * 0.34);
+          // Head
+          ctx.fillStyle = '#fed7aa';
+          ctx.beginPath();
+          ctx.arc(cx, cy - s * 0.14, s * 0.18, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          // Big Yellow Bow
+          ctx.fillStyle = '#fde047';
+          ctx.beginPath();
+          ctx.moveTo(cx, cy - s * 0.32);
+          ctx.lineTo(cx - s * 0.28, cy - s * 0.44);
+          ctx.lineTo(cx - s * 0.24, cy - s * 0.22);
+          ctx.closePath();
+          ctx.moveTo(cx, cy - s * 0.32);
+          ctx.lineTo(cx + s * 0.28, cy - s * 0.44);
+          ctx.lineTo(cx + s * 0.24, cy - s * 0.22);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+        } else if (p.id === 1) {
+          // CYBORG (Red): armored robot + cyan visor
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(cx - s * 0.24, cy - s * 0.28, s * 0.48, s * 0.56);
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(cx - s * 0.24, cy - s * 0.28, s * 0.48, s * 0.56);
+          // Metallic chest plate
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillRect(cx - s * 0.14, cy + s * 0.02, s * 0.28, s * 0.16);
+          // Glowing cyan visor
+          ctx.fillStyle = '#22d3ee';
+          ctx.fillRect(cx - s * 0.18, cy - s * 0.2, s * 0.36, s * 0.11);
+        } else if (p.id === 2) {
+          // 4-BIT (Blue): retro blocky pixel alien
+          ctx.fillStyle = '#3b82f6';
+          ctx.fillRect(cx - s * 0.26, cy - s * 0.24, s * 0.52, s * 0.48);
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(cx - s * 0.26, cy - s * 0.24, s * 0.52, s * 0.48);
+          // Pixel antenna
+          ctx.fillStyle = '#93c5fd';
+          ctx.fillRect(cx - s * 0.05, cy - s * 0.4, s * 0.1, s * 0.16);
+          // White square pixel eyes
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(cx - s * 0.16, cy - s * 0.12, s * 0.11, s * 0.11);
+          ctx.fillRect(cx + s * 0.05, cy - s * 0.12, s * 0.11, s * 0.11);
+        } else {
+          // MARINE (Green): armored soldier with gold helmet visor
+          ctx.fillStyle = '#16a34a';
+          ctx.fillRect(cx - s * 0.24, cy - s * 0.04, s * 0.48, s * 0.34);
+          ctx.strokeStyle = '#0f172a';
+          ctx.lineWidth = 1.5;
+          ctx.strokeRect(cx - s * 0.24, cy - s * 0.04, s * 0.48, s * 0.34);
+          // Helmet
+          ctx.fillStyle = '#22c55e';
+          ctx.beginPath();
+          ctx.arc(cx, cy - s * 0.16, s * 0.21, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.stroke();
+          // Gold visor
+          ctx.fillStyle = '#facc15';
+          ctx.fillRect(cx - s * 0.14, cy - s * 0.22, s * 0.28, s * 0.11);
+        }
+
+        // If carrying an enemy Princess, draw her riding right above the hero!
+        if (p.carryingPrincessOf !== -1) {
+          const princessColor = state.players[p.carryingPrincessOf].color;
+          drawMiniPrincess(cx + s * 0.22, cy - s * 0.38, princessColor, s * 0.2);
+        }
+
+        ctx.restore();
+      }
+
+      function drawItem(it) {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const bob = Math.sin(state.time * 5 + it.x * 2) * 2.5;
+        const cx = gridOrigin + (it.x + 0.5) * cellSize;
+        const cy = gridOrigin + (it.y + 0.5) * cellSize + bob;
+
+        // Glowing badge behind item
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.72)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, cellSize * 0.36, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#fde047';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+
+        const spec = ITEM_TYPES.find(t => t.type === it.type);
+        ctx.font = `${Math.floor(cellSize * 0.54)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(spec ? spec.icon : '❓', cx, cy + 1);
+      }
+
+      function drawMonster(m) {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const p = state.players[m.owner];
+        const bob = Math.abs(Math.sin(state.time * 7 + m.x)) * 3;
+        const cx = gridOrigin + (m.x + 0.5) * cellSize;
+        const cy = gridOrigin + (m.y + 0.55) * cellSize - bob;
+        const r = cellSize * 0.3;
+
+        ctx.fillStyle = m.kind === 'wolf' ? '#38bdf8' : (m.kind === 'boar' ? '#f97316' : '#a855f7');
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = p ? p.color : '#ffffff';
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+
+        // Fierce pixel eyes
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(cx - r * 0.45, cy - r * 0.25, 4, 4);
+        ctx.fillRect(cx + r * 0.15, cy - r * 0.25, 4, 4);
+        ctx.fillStyle = '#0f172a';
+        ctx.fillRect(cx - r * 0.35, cy - r * 0.18, 2, 2);
+        ctx.fillRect(cx + r * 0.22, cy - r * 0.18, 2, 2);
+      }
+
+      function drawGhostTetromino() {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const p = getCurrentPlayer();
+        const { cells, x, y, valid } = state.currentPiece;
+        const pulse = 0.55 + Math.sin(state.time * 9) * 0.18;
+
+        for (const [dx, dy] of cells) {
+          const tx = x + dx;
+          const ty = y + dy;
+          if (!inBounds(tx, ty)) continue;
+          const px = gridOrigin + tx * cellSize;
+          const py = gridOrigin + ty * cellSize;
+
+          ctx.fillStyle = valid ? p.color : '#ef4444';
+          ctx.globalAlpha = pulse;
+          ctx.fillRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+          ctx.globalAlpha = 1;
+
+          ctx.strokeStyle = valid ? '#ffffff' : '#7f1d1d';
+          ctx.lineWidth = 2.5;
+          ctx.strokeRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+        }
+      }
+
+      function drawPhaseHighlights() {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const player = getCurrentPlayer();
+        if (!player || !player.isHuman || state.busy) return;
+
+        // ACTION PHASE: Reachable movement tiles & attack targets
+        if (state.phase === 'ACTION') {
+          if (state.actionSubMode === 'move') {
+            const pulse = 0.24 + Math.sin(state.time * 6) * 0.1;
+            state.reachable.forEach((_, k) => {
+              const [rx, ry] = k.split(',').map(Number);
+              const px = gridOrigin + rx * cellSize;
+              const py = gridOrigin + ry * cellSize;
+              ctx.fillStyle = `rgba(255, 255, 255, ${pulse})`;
+              ctx.fillRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+              ctx.strokeStyle = 'rgba(254, 240, 138, 0.9)';
+              ctx.lineWidth = 1.8;
+              ctx.strokeRect(px + 2.5, py + 2.5, cellSize - 5, cellSize - 5);
+            });
+
+            // Red sword reticles on attackable adjacent enemies
+            state.attackTargets.forEach(t => {
+              const px = gridOrigin + t.x * cellSize;
+              const py = gridOrigin + t.y * cellSize;
+              ctx.fillStyle = 'rgba(239, 68, 68, 0.38)';
+              ctx.fillRect(px + 1, py + 1, cellSize - 2, cellSize - 2);
+              ctx.strokeStyle = '#ef4444';
+              ctx.lineWidth = 2.5;
+              ctx.strokeRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+            });
+          } else if (state.actionSubMode === 'spring') {
+            // Highlight tiles within Manhattan distance 3
+            for (let y = 0; y < GRID_SIZE; y++) {
+              for (let x = 0; x < GRID_SIZE; x++) {
+                const d = Math.abs(x - player.x) + Math.abs(y - player.y);
+                if (d > 0 && d <= 3 && !getHeroAt(x, y, player.id) && !getMonsterAt(x, y)) {
+                  const px = gridOrigin + x * cellSize;
+                  const py = gridOrigin + y * cellSize;
+                  ctx.fillStyle = 'rgba(56, 189, 248, 0.35)';
+                  ctx.fillRect(px + 2, py + 2, cellSize - 4, cellSize - 4);
+                }
+              }
+            }
+          }
+        }
+
+        // CANNON PHASE: Numbered crosshairs
+        if (state.phase === 'CANNON') {
+          state.cannonTargets.forEach((t, idx) => {
+            const cx = gridOrigin + (t.x + 0.5) * cellSize;
+            const cy = gridOrigin + (t.y + 0.5) * cellSize;
+            const r = cellSize * 0.38;
+
+            ctx.fillStyle = 'rgba(239, 68, 68, 0.35)';
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            ctx.arc(cx, cy, r, 0, Math.PI * 2);
+            ctx.moveTo(cx - r * 1.2, cy);
+            ctx.lineTo(cx + r * 1.2, cy);
+            ctx.moveTo(cx, cy - r * 1.2);
+            ctx.lineTo(cx, cy + r * 1.2);
+            ctx.stroke();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.font = `bold ${Math.floor(cellSize * 0.42)}px sans-serif`;
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(String(idx + 1), cx, cy + 1);
+          });
+        }
+      }
+
+      function drawLaserBeam(b) {
+        const { gridOrigin, cellSize, size, border } = boardMetrics;
+        const cx = gridOrigin + (b.x + 0.5) * cellSize;
+        const cy = gridOrigin + (b.y + 0.5) * cellSize;
+        const w = cellSize * 0.75 * b.life;
+
+        ctx.save();
+        ctx.globalAlpha = Math.min(1, b.life * 1.4);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillRect(border, cy - w / 2, size - border * 2, w);
+        ctx.fillRect(cx - w / 2, border, w, size - border * 2);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(border, cy - w * 0.25, size - border * 2, w * 0.5);
+        ctx.fillRect(cx - w * 0.25, border, w * 0.5, size - border * 2);
+        ctx.restore();
+      }
+
+      function drawWizardFX(fx) {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const cx = gridOrigin + (fx.x + 0.5) * cellSize;
+        const cy = gridOrigin + (fx.y + 0.5) * cellSize;
+
+        // Swirling dark magic circle
+        ctx.save();
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(cx, cy, cellSize * 1.4, 0, Math.PI * 2);
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(147, 51, 234, 0.35)';
+        ctx.beginPath();
+        ctx.arc(cx, cy, cellSize * 1.4, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.font = `${Math.floor(cellSize * 0.9)}px sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('🧙‍♂️', cx, cy - 4);
+        ctx.restore();
+      }
+
+      function drawProjectile(p) {
+        const { gridOrigin, cellSize } = boardMetrics;
+        const t = Math.min(1, p.t);
+        const gx = p.sx + (p.tx - p.sx) * t;
+        const gy = p.sy + (p.ty - p.sy) * t;
+        const arcHeight = p.kind === 'missile' ? 0 : Math.sin(t * Math.PI) * cellSize * 2.1;
+
+        const px = gridOrigin + (gx + 0.5) * cellSize;
+        const py = gridOrigin + (gy + 0.5) * cellSize;
+
+        // Ground shadow
+        if (p.kind !== 'missile') {
+          ctx.fillStyle = 'rgba(0,0,0,0.32)';
+          ctx.beginPath();
+          ctx.ellipse(px, py + 4, cellSize * 0.22 * (1 - Math.sin(t * Math.PI) * 0.35), cellSize * 0.1, 0, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Projectile body
+        if (p.kind === 'missile') {
+          ctx.fillStyle = '#e2e8f0';
+          ctx.beginPath();
+          ctx.arc(px, py, cellSize * 0.22, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#ef4444';
+          ctx.beginPath();
+          ctx.arc(px, py + 3, cellSize * 0.14, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = '#111827';
+          ctx.beginPath();
+          ctx.arc(px, py - arcHeight, cellSize * 0.24, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.fillStyle = '#64748b';
+          ctx.beginPath();
+          ctx.arc(px - 2, py - arcHeight - 2, cellSize * 0.08, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
+      function drawParticles() {
+        const { gridOrigin, cellSize } = boardMetrics;
+        for (const pt of state.particles) {
+          const px = gridOrigin + pt.x * cellSize;
+          const py = gridOrigin + pt.y * cellSize;
+          ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
+          ctx.fillStyle = pt.color;
+          ctx.fillRect(px - pt.size / 2, py - pt.size / 2, pt.size, pt.size);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      function drawFloatingTexts() {
+        const { gridOrigin, cellSize } = boardMetrics;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        for (const ft of state.floatingTexts) {
+          const px = gridOrigin + ft.x * cellSize;
+          const py = gridOrigin + ft.y * cellSize;
+          ctx.globalAlpha = Math.max(0, Math.min(1, ft.life * 1.3));
+          ctx.font = `700 ${ft.size}px "Chakra Petch", sans-serif`;
+          ctx.strokeStyle = '#020617';
+          ctx.lineWidth = 3.5;
+          ctx.strokeText(ft.text, px, py);
+          ctx.fillStyle = ft.color;
+          ctx.fillText(ft.text, px, py);
+        }
+        ctx.globalAlpha = 1;
+      }
+
+      // -----------------------------------------------------------------------
+      // 17. MENU & UI EVENT BINDINGS
+      // -----------------------------------------------------------------------
+      function buildHeroSelector() {
+        const grid = document.getElementById('hero-grid');
+        grid.innerHTML = '';
+        HERO_CONFIG.forEach(cfg => {
+          const selected = state.selectedHero === cfg.id;
+          const btn = document.createElement('button');
+          btn.className = `arcade-btn py-2 px-2 text-xs flex items-center justify-start gap-2 ${selected ? 'ring-2 ring-white scale-[1.02]' : 'opacity-80'}`;
+          btn.style.background = `linear-gradient(180deg, ${cfg.light} 0%, ${cfg.color} 100%)`;
+          btn.style.color = cfg.id === 0 || cfg.id === 3 ? '#0f172a' : '#ffffff';
+          btn.innerHTML = `<span class="text-lg">${cfg.emoji}</span><span class="truncate">${cfg.name}</span>`;
+          btn.addEventListener('click', () => {
+            SFX.click();
+            state.selectedHero = cfg.id;
+            buildHeroSelector();
+          });
+          grid.appendChild(btn);
+        });
+
+        const cur = HERO_CONFIG[state.selectedHero];
+        document.getElementById('hero-preview').innerHTML = `
+          <div class="flex items-center justify-between mb-1">
+            <span class="font-bold text-sm" style="color:${cur.light}">${cur.emoji} ${cur.name} (${cur.castleName})</span>
+            <span class="font-pixel text-[8px] text-amber-300">${cur.specialEng}</span>
+          </div>
+          <p class="text-slate-300 text-[11px] leading-snug">${cur.specialDesc}</p>
+        `;
+      }
+
+      // Mode toggles
+      const modeAiBtn = document.getElementById('mode-ai');
+      const modeLocalBtn = document.getElementById('mode-local');
+      const localCountWrap = document.getElementById('local-count-wrap');
+      const heroSelectWrap = document.getElementById('hero-select-wrap');
+
+      modeAiBtn.addEventListener('click', () => {
+        SFX.click();
+        state.mode = 'ai';
+        modeAiBtn.className = 'arcade-btn btn-yellow py-2 text-xs';
+        modeLocalBtn.className = 'arcade-btn btn-slate py-2 text-xs';
+        localCountWrap.classList.add('hidden');
+        heroSelectWrap.classList.remove('hidden');
+      });
+
+      modeLocalBtn.addEventListener('click', () => {
+        SFX.click();
+        state.mode = 'local';
+        modeLocalBtn.className = 'arcade-btn btn-yellow py-2 text-xs';
+        modeAiBtn.className = 'arcade-btn btn-slate py-2 text-xs';
+        localCountWrap.classList.remove('hidden');
+        heroSelectWrap.classList.add('hidden');
+      });
+
+      document.querySelectorAll('.hcount-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          SFX.click();
+          state.humanCount = Number(btn.dataset.hcount);
+          document.querySelectorAll('.hcount-btn').forEach(b => {
+            b.className = `hcount-btn arcade-btn ${Number(b.dataset.hcount) === state.humanCount ? 'btn-blue' : 'btn-slate'} px-3 py-1 text-xs`;
+          });
+        });
+      });
+
+      // Start, Menu, Help, Mute, Play Again buttons
+      document.getElementById('btn-start-game').addEventListener('click', () => {
+        SFX.click();
+        initNewGame();
+      });
+
+      document.getElementById('btn-play-again').addEventListener('click', () => {
+        SFX.click();
+        initNewGame();
+      });
+
+      document.getElementById('btn-back-menu').addEventListener('click', () => {
+        SFX.click();
+        gameoverModal.classList.add('hidden');
+        startModal.classList.remove('hidden');
+      });
+
+      document.getElementById('btn-open-howto').addEventListener('click', () => {
+        SFX.click();
+        howtoModal.classList.remove('hidden');
+      });
+      document.getElementById('btn-help-ingame').addEventListener('click', () => {
+        SFX.click();
+        howtoModal.classList.remove('hidden');
+      });
+      document.getElementById('btn-close-howto').addEventListener('click', () => {
+        SFX.click();
+        howtoModal.classList.add('hidden');
+      });
+      document.getElementById('btn-howto-ok').addEventListener('click', () => {
+        SFX.click();
+        howtoModal.classList.add('hidden');
+      });
+
+      document.getElementById('btn-menu-ingame').addEventListener('click', () => {
+        SFX.click();
+        startModal.classList.remove('hidden');
+      });
+
+      document.getElementById('btn-mute').addEventListener('click', (e) => {
+        const isMuted = SFX.toggleMute();
+        e.currentTarget.textContent = isMuted ? '🔇' : '🔊';
+      });
+
+      // Boot sequence on window load
+      window.addEventListener('load', () => {
+        buildHeroSelector();
+        resizeCanvas();
+        // Prepare a nice background preview board behind the Start Menu
+        state.grid = Array.from({ length: GRID_SIZE }, () =>
+          Array.from({ length: GRID_SIZE }, () => ({ owner: -1, type: 'empty', castle: -1, flash: 0 }))
+        );
+        state.players = HERO_CONFIG.map(cfg => ({
+          ...cfg, alive: true, ko: false, hp: 2, maxHp: 2, charge: 50,
+          x: cfg.castlePos.x, y: cfg.castlePos.y,
+          renderX: cfg.castlePos.x, renderY: cfg.castlePos.y,
+          princessHome: true, carryingPrincessOf: -1
+        }));
+        HERO_CONFIG.forEach(cfg => {
+          state.grid[cfg.castlePos.y][cfg.castlePos.x] = { owner: cfg.id, type: 'castle', castle: cfg.id, flash: 0 };
+        });
+        for (let x = 1; x <= 4; x++) { setBlock(x, 0, 0, 'normal'); setBlock(x, 9, 2, 'normal'); }
+        for (let x = 5; x <= 8; x++) { setBlock(x, 0, 1, 'normal'); setBlock(x, 9, 3, 'normal'); }
+        for (let y = 1; y <= 4; y++) { setBlock(0, y, 0, 'normal'); setBlock(9, y, 1, 'normal'); }
+        for (let y = 5; y <= 8; y++) { setBlock(0, y, 2, 'normal'); setBlock(9, y, 3, 'normal'); }
+        updateHUD();
+        requestAnimationFrame(gameLoop);
+      });
+    })();
+  </script>
+</body>
+</html>
+```
